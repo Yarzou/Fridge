@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+  <!-- Schéma initial : profils, foyers et invitations, congélateurs et tiroirs, produits,
+       liste de courses, tables de référence (catégories, rayons), RPC et RLS par foyer -->
+  <include file="liquibase/changelog/001-schema-initial.sql"/>
+
+</databaseChangeLog>

@@ -1,0 +1,21 @@
+# Template de configuration Liquibase (versionné — AUCUNE donnée sensible ici)
+# Copiez ce fichier : cp liquibase/liquibase.properties.example liquibase/liquibase.properties
+#
+# Chemin recommandé : passer par `npm run db:migrate` (scripts/db-migrate.js).
+# Le script lit SUPABASE_DB_PASSWORD dans .env.local et fournit url / username /
+# password en arguments CLI — ils ont la priorité sur ce fichier, qui ne sert
+# alors qu'à porter driver / changeLogFile / outputDefaultSchema.
+#
+# Si vous appelez la CLI Liquibase directement, décommentez les trois lignes
+# ci-dessous et renseignez-les dans liquibase/liquibase.properties (gitignoré) :
+#   - <PROJECT_REF> : Supabase Dashboard > Project Settings > General
+#   - mot de passe  : Supabase Dashboard > Project Settings > Database
+#
+#url=jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres
+#username=postgres
+#password=<SUPABASE_DB_PASSWORD>
+
+driver=org.postgresql.Driver
+changeLogFile=liquibase/changelog/db.changelog-master.xml
+#liquibase.hub.mode=off
+outputDefaultSchema=false
