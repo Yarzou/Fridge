@@ -84,10 +84,11 @@ jobs:
           fi
           echo "Secrets normalisés — URL : forme valide · clé : ${#key} caractères"
 
+          # En-tête `apikey` seul : les clés sb_publishable_… ne sont pas des JWT,
+          # et Supabase demande de ne pas les passer en `Authorization: Bearer`.
           code=$(curl -sS -o /dev/null -w '%{http_code}' \
                    --retry 3 --retry-delay 10 --max-time 30 \
                    -H "apikey: ${key}" \
-                   -H "Authorization: Bearer ${key}" \
                    "${url}/rest/v1/categories?select=slug&limit=1")
           echo "PostgREST → $code"
           if [ "$code" = "401" ]; then
