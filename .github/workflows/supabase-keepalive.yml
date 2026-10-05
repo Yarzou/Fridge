@@ -1,0 +1,100 @@
+# Second filet contre la mise en pause du projet Supabase (plan gratuit :
+# pause après ~7 jours sans requête API). Repris de neighborshare.
+#
+# Le cron Vercel (vercel.json → /api/keepalive) est le mécanisme principal.
+# Ce workflow existe parce qu'un cron Vercel peut être désactivé sans bruit
+# (dépassement de quota Hobby, projet déconnecté, déploiement en échec).
+#
+# ⚠️ GitHub désactive les workflows planifiés d'un dépôt resté 60 jours sans
+# activité. Il envoie un mail avant — il suffit de le réactiver.
+#
+# Configuration (Settings du dépôt) :
+#   - Variables > KEEPALIVE_URL   URL de la route, ex. https://<domaine>/api/keepalive.
+#                                 Sans elle le premier ping est sauté : le domaine
+#                                 Vercel de Fridge n'est pas encore connu.
+#   - Secrets > CRON_SECRET       (optionnel) si vous en avez défini un sur Vercel
+#   - Secrets > SUPABASE_URL + SUPABASE_ANON_KEY  pour le ping direct (valeurs NUES)
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    # Tous les 3 jours à 07:00 UTC — large marge sous le seuil de 7 jours
+    - cron: '0 7 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # Le contexte `secrets` est interdit dans un `if:` (le workflow entier
+    # devient invalide, aucun job créé). On le recopie en env de job, lisible
+    # depuis un `if:` de step.
+    env:
+      KEEPALIVE_URL: ${{ vars.KEEPALIVE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Ping /api/keepalive (via Vercel)
+        if: ${{ env.KEEPALIVE_URL != '' }}
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          auth=()
+          if [ -n "${CRON_SECRET:-}" ]; then
+            auth=(-H "Authorization: Bearer ${CRON_SECRET}")
+          fi
+          echo "GET ${KEEPALIVE_URL}"
+          code=$(curl -sS -o /tmp/keepalive.json -w '%{http_code}' \
+                   --retry 3 --retry-delay 10 --max-time 30 \
+                   "${auth[@]}" "${KEEPALIVE_URL}")
+          cat /tmp/keepalive.json; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::keepalive a répondu $code"
+            exit 1
+          fi
+
+      - name: Ping direct PostgREST (indépendant de Vercel)
+        if: ${{ env.SUPABASE_ANON_KEY != '' && env.SUPABASE_URL != '' }}
+        run: |
+          set -euo pipefail
+
+          # Normalisation défensive (vécu sur neighborshare : préfixe `VAR=`,
+          # guillemets, retour à la ligne collés avec la valeur). GitHub ne masque
+          # que la chaîne exacte d'un secret : on ne journalise que des longueurs.
+          sanitize() {
+            local v="${1//$'\r'/}" i
+            v="${v//$'\n'/}"
+            for i in 1 2; do
+              v="${v#"${v%%[![:space:]]*}"}"
+              v="${v%"${v##*[![:space:]]}"}"
+              if [[ $v == \"*\" || $v == \'*\' ]]; then v="${v:1:${#v}-2}"; fi
+              if [[ $v =~ ^[A-Za-z_][A-Za-z0-9_]*=.+ ]]; then v="${v#*=}"; fi
+            done
+            printf '%s' "$v"
+          }
+
+          url=$(sanitize "${SUPABASE_URL}")
+          url="${url%/}"
+          key=$(sanitize "${SUPABASE_ANON_KEY}")
+
+          if [[ ! $url =~ ^https://[A-Za-z0-9.-]+$ ]]; then
+            echo "::error::Secret SUPABASE_URL invalide : une origine nue est attendue, du type https://<ref>.supabase.co."
+            exit 1
+          fi
+          echo "Secrets normalisés — URL : forme valide · clé : ${#key} caractères"
+
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                   --retry 3 --retry-delay 10 --max-time 30 \
+                   -H "apikey: ${key}" \
+                   -H "Authorization: Bearer ${key}" \
+                   "${url}/rest/v1/categories?select=slug&limit=1")
+          echo "PostgREST → $code"
+          if [ "$code" = "401" ]; then
+            echo "::error::PostgREST a répondu 401 : la clé est refusée. Longueur reçue : ${#key} caractères — comparer avec NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env.local."
+            exit 1
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::PostgREST a répondu $code"
+            exit 1
+          fi
