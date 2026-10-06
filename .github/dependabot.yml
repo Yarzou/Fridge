@@ -1,0 +1,26 @@
+# Veille des dépendances npm : Dependabot propose les mises à jour en pull
+# requests, chaque lundi. Les versions mineures et correctives sont regroupées
+# en une seule PR ; une version majeure arrive seule, à relire.
+#
+# Les correctifs de SÉCURITÉ arrivent dès leur publication, sans attendre le
+# lundi, si « Dependabot security updates » est activé dans le dépôt
+# (Settings → Code security).
+#
+# Avant de fusionner : npm run lint, npm run typecheck, npm run build (et le
+# déploiement de prévisualisation Vercel de la PR).
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    groups:
+      mineures:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: 'chore(deps)'
