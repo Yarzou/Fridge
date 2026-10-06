@@ -199,3 +199,23 @@ Rappels réglables par chaque personne, sur le modèle des notifications de neig
 - Vérifié dans Chrome au format iPhone, en clair et en sombre : bulle au repos, pendant un glissé, navigation vers Foyer au lâcher, transparence au-dessus du contenu. Captures supprimées.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
 - **Non vérifié sur iPhone** : le téléphone affichait encore une version antérieure au correctif de la feuille, alors que le dernier commit était bien déployé.
+
+## 2026-10-06 — Haut d'écran sous iOS 26, bulle sur mesure, barre plus basse
+
+- `lib/ios-top.ts` et `app/layout.tsx` : dans l'appli installée sur iPhone, le haut des écrans descend sous le fondu flou qu'iOS 26 ajoute sous la barre d'état.
+  - Le fondu fait environ 32 px et ne peut pas être désactivé côté web.
+  - Sur le téléphone de l'utilisateur, iOS déclarait une zone réservée nulle alors que la page passait sous l'heure. « Cuisine » et « + » y étaient cachés, le titre flouté.
+  - Le script calcule `--safe-top` : zone déclarée, ou hauteur de barre estimée d'après la taille d'écran, + 32 px.
+  - `.pt-safe` et `StatusBarShield` lisent `--safe-top`. Safari, Android et l'ordinateur ne changent pas.
+- `lib/utils.ts` : `cn()` déclare l'échelle typographique à tailwind-merge. Elle était prise pour des couleurs, et la taille disparaissait dès qu'une couleur suivait : libellés de la barre à 16 px au lieu de 11, titres de lignes « accent » à 16 px au lieu de 17.
+- `components/layout/TabBar.tsx` :
+  - la bulle entoure l'icône et le libellé de l'onglet choisi, à sa taille (plus large pour « Congélateur » que pour « Foyer »), et change de largeur en glissant ;
+  - la pastille des courses se pose sur le coin de l'icône.
+- `app/globals.css` : la barre d'onglets descend, à 20 px du bas sur un iPhone à barre d'accueil (44 px avant). La marge du bas des pages, le toast et l'encart des courses suivent.
+- `components/ui/Switch.tsx` : en position « on », la pastille sortait de la piste. Elle est maintenant ancrée à gauche et glisse de 20 px.
+- Mesuré dans Chrome au format iPhone (393 × 852) :
+  - bulle de 89, 67 et 56 px autour de contenus de 61, 39 et 28 px ;
+  - interrupteurs « on » et « off » dans leur piste, avec 2 px de marge ;
+  - appli installée simulée (`navigator.standalone`) : `--safe-top` = 86 px, en-tête à 94 px ; navigateur ordinaire inchangé (8 px).
+- Captures supprimées.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
