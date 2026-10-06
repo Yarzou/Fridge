@@ -111,26 +111,30 @@ textarea::placeholder {
  * Le viewport est en `viewport-fit=cover` (app/layout.tsx) : c'est à la page
  * de se décaler. */
 @layer utilities {
+  /* --safe-top : haut d'écran de l'appli installée sur iPhone, sous le fondu d'iOS 26 (lib/ios-top.ts) */
   .pt-safe {
-    padding-top: calc(env(safe-area-inset-top) + 8px);
+    padding-top: calc(var(--safe-top, env(safe-area-inset-top)) + 8px);
   }
   .pb-safe {
     padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
   }
-  /* Laisse la place à la barre d'onglets flottante */
-  .pb-tabbar {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 112px);
-  }
+  /* Barre d'onglets flottante, posée bas comme sur iOS 26 : elle chevauche la
+     zone de la barre d'accueil (34 px), 20 px au-dessus du bord de l'écran.
+     Sans zone réservée (ordinateur, anciens iPhone), 10 px. */
   .bottom-tabbar {
-    bottom: calc(env(safe-area-inset-bottom) + 10px);
+    bottom: max(calc(env(safe-area-inset-bottom) - 14px), 10px);
+  }
+  /* Laisse la place à la barre d'onglets (62 px) */
+  .pb-tabbar {
+    padding-bottom: calc(max(calc(env(safe-area-inset-bottom) - 14px), 10px) + 102px);
   }
   /* Toast « Annuler » et encart flottant : juste au-dessus de la barre d'onglets */
   .bottom-toast {
-    bottom: calc(env(safe-area-inset-bottom) + 90px);
+    bottom: calc(max(calc(env(safe-area-inset-bottom) - 14px), 10px) + 80px);
   }
   /* Courses : la liste laisse aussi la place à l'encart « surgelés dans le panier » */
   .pb-tabbar-card {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 190px);
+    padding-bottom: calc(max(calc(env(safe-area-inset-bottom) - 14px), 10px) + 180px);
   }
   /* Défilement horizontal sans barre visible (« À consommer bientôt ») */
   .no-scrollbar {

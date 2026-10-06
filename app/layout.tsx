@@ -4,6 +4,7 @@ import { ThemeSync } from '@/components/theme/theme'
 import ServiceWorkerRegister from '@/components/layout/ServiceWorkerRegister'
 import PWAInstallBanner from '@/components/layout/PWAInstallBanner'
 import { APP_DESCRIPTION, APP_NAME, THEME_COLOR_DARK, THEME_COLOR_LIGHT } from '@/lib/app'
+import { IOS_TOP_SCRIPT } from '@/lib/ios-top'
 
 export const metadata: Metadata = {
   title: APP_NAME,
@@ -38,6 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
           }}
         />
+        {/* Appli installée sur iPhone : le haut des écrans passe sous le fondu d'iOS 26 (voir lib/ios-top.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: IOS_TOP_SCRIPT }} />
       </head>
       <body className="min-h-dvh bg-canvas font-sans text-ink">
         <ThemeSync />
