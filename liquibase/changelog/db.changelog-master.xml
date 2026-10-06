@@ -13,4 +13,8 @@
        RPC note_shopping_term -->
   <include file="liquibase/changelog/002-vocabulaire-courses.sql"/>
 
+  <!-- Rappels sur le téléphone : abonnements Web Push par appareil (push_subscriptions),
+       réglages par personne (reminder_settings), RPC save_push_subscription -->
+  <include file="liquibase/changelog/003-rappels.sql"/>
+
 </databaseChangeLog>
