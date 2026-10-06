@@ -270,3 +270,24 @@ Le même geste que la bulle de la barre d'onglets, à la façon d'iOS 26, là o�
 - `components/ui/Segmented.tsx` : le contrôle, sa pastille et ses segments prennent la forme d'une capsule (`rounded-full`), comme sur iOS 26. Ils avaient des coins de 9 et 7 px. Cela vaut pour « Catégories / Tiroirs / Dates », « Apparence » et le tiroir de la fiche produit. La marge intérieure des segments ne change pas (`px-1`), pour que les noms courts des tiroirs (46 px par segment) tiennent toujours.
 - Vérifié dans Chrome au format iPhone, sur une page d'essai temporaire, supprimée ensuite : les trois tailles, en clair et en sombre, au repos et pendant un glissé. Captures supprimées.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-06 — Navigation instantanée
+
+Constat : chaque changement d'onglet attendait le serveur. Les pages de l'appli sont dynamiques (le layout lit la session) : Next 16 ne les précharge pas et ne garde pas leur rendu. Pourtant elles n'ont aucune donnée serveur, tout vient de `HouseholdDataProvider`.
+- `components/layout/TabBar.tsx` :
+  - préchargement complet (`prefetch`) des trois onglets et du scanner ;
+  - au retour au premier plan, `router.prefetch` les recharge, au cas où le cache aurait expiré pendant la veille.
+- `app/(app)/(onglets)/congelateur/CongelateurClient.tsx`, `tiroir/[id]/TiroirClient.tsx` : `prefetch` sur « Ajouter », les lignes et vignettes de produit et les titres de tiroir. Next envoyait déjà une requête de préchargement partiel par lien visible : 22 requêtes au chargement du Congélateur, contre 21 avant.
+- `next.config.js` : `experimental.staleTimes`. Les pages préchargées sont gardées 1 h, les autres 5 min (0 par défaut).
+- `vercel.json` : `"regions": ["dub1"]`. Les fonctions passent de Washington (défaut) à Dublin, à côté de la base Supabase (`eu-west-1`) : un aller-retour transatlantique de moins pour chaque page servie par le serveur.
+- `app/(app)/layout.tsx` : `getClaims()` au lieu de `getUser()`. La signature du jeton est vérifiée sur place (clé publique en cache), sans appel au serveur d'auth à chaque ouverture. Avec un ancien secret HS256, `getClaims()` appelle `getUser()` de lui-même.
+- Mesuré en production locale (`next build` + `next start`, faux Supabase), avec 150 ms de latence simulée par requête :
+
+  | Geste | Avant | Après |
+  |---|---|---|
+  | Changer d'onglet | 175 à 358 ms | 12 à 23 ms |
+  | Ouvrir un produit | 341 à 349 ms | 15 à 18 ms |
+  | Ouvrir un tiroir | 341 ms | 19 ms |
+
+- Non vérifié : l'effet de `dub1` sur Vercel, et `getClaims()` sur la vraie base. Le faux Supabase signe en HS256, donc l'essai local est passé par le repli `getUser()`.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
