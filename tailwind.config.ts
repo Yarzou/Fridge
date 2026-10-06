@@ -49,6 +49,14 @@ const config: Config = {
           DEFAULT: 'var(--glass)',
           edge: 'var(--glass-edge)',
         },
+        tabbar: {
+          DEFAULT: 'var(--tabbar)',
+          edge: 'var(--tabbar-edge)',
+        },
+        bubble: {
+          DEFAULT: 'var(--bubble)',
+          edge: 'var(--bubble-edge)',
+        },
         seg: 'var(--seg)',
         'chip-edge': 'var(--chip-edge)',
         grabber: 'var(--grabber)',
@@ -95,7 +103,21 @@ const config: Config = {
         footnote: ['13px', '18px'],
         caption: ['11px', '13px'],
       },
+      // « Goutte d'eau » de la barre d'onglets : la bulle s'étire en partant, se tasse, se pose.
+      keyframes: {
+        bubble: {
+          '0%': { transform: 'scale(1, 1)' },
+          '30%': { transform: 'scale(1.24, 0.84)' },
+          '62%': { transform: 'scale(0.95, 1.06)' },
+          '100%': { transform: 'scale(1, 1)' },
+        },
+      },
+      animation: {
+        bubble: 'bubble 560ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+      },
       boxShadow: {
+        glass: 'var(--shadow-float), inset 0 1px 0 var(--tabbar-highlight)',
+        bubble: 'inset 0 0 0 0.5px var(--bubble-edge), 0 2px 10px rgba(0, 0, 0, 0.1)',
         lift: 'var(--shadow-lift)',
         float: 'var(--shadow-float)',
       },

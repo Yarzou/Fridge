@@ -30,6 +30,11 @@
   --danger-soft: #fde4e2;
   --glass: rgba(255, 255, 255, 0.88);
   --glass-edge: rgba(0, 0, 0, 0.06);
+  --tabbar: rgba(255, 255, 255, 0.42);           /* barre d'onglets : verre très transparent */
+  --tabbar-edge: rgba(255, 255, 255, 0.65);
+  --tabbar-highlight: rgba(255, 255, 255, 0.8);  /* reflet sur l'arête haute */
+  --bubble: rgba(120, 120, 128, 0.16);           /* bulle de l'onglet choisi : gris système translucide */
+  --bubble-edge: rgba(255, 255, 255, 0.75);      /* liseré lumineux de la bulle */
   --shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.12);
   --seg: #ffffff;           /* segment actif d'un contrôle segmenté */
@@ -64,6 +69,11 @@ html.dark {
   --danger-soft: #3b1512;
   --glass: rgba(36, 36, 38, 0.88);
   --glass-edge: rgba(255, 255, 255, 0.08);
+  --tabbar: rgba(44, 44, 46, 0.42);
+  --tabbar-edge: rgba(255, 255, 255, 0.12);
+  --tabbar-highlight: rgba(255, 255, 255, 0.14);
+  --bubble: rgba(255, 255, 255, 0.16);
+  --bubble-edge: rgba(255, 255, 255, 0.24);
   --shadow-lift: none;
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.5);
   --seg: #636366;
