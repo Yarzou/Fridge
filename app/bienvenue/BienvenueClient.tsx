@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link2, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PGRST_FUNCTION_NOT_FOUND } from '@/lib/household'
+import { reloadTo } from '@/lib/utils'
 import AuthShell from '@/components/auth/AuthShell'
 import Button from '@/components/ui/Button'
 import Notice from '@/components/ui/Notice'
@@ -39,12 +40,12 @@ export default function BienvenueClient({ displayName }: { displayName: string |
       return
     }
     // Navigation complète : le layout serveur relit le foyer
-    window.location.href = '/congelateur'
+    reloadTo('/congelateur')
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/auth/login'
+    reloadTo('/auth/login')
   }
 
   return (

@@ -46,3 +46,15 @@ export function initial(name: string | null | undefined): string {
   const trimmed = (name ?? '').trim()
   return trimmed ? trimmed[0].toLocaleUpperCase('fr-FR') : '?'
 }
+
+/**
+ * Navigation complète (rechargement) vers une page de l'appli, sans le routeur
+ * de Next. Voulue après une déconnexion, ou après avoir créé ou rejoint un
+ * foyer : on repart d'un état propre (client Supabase, foyer et données en
+ * mémoire, layout serveur relu). Ailleurs, utiliser <Link> ou router.push().
+ */
+export function reloadTo(path: `/${string}`): void {
+  // Chemin interne seulement : jamais d'URL absolue ni de « //autre-site »
+  if (path.startsWith('//')) throw new Error('reloadTo : chemin interne attendu')
+  window.location.assign(new URL(path, window.location.origin).href)
+}

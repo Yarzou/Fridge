@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME } from '@/lib/app'
-import { cn, formatDate, initial, plural } from '@/lib/utils'
+import { cn, formatDate, initial, plural, reloadTo } from '@/lib/utils'
 import { HOUSEHOLD_ROLE_LABELS } from '@/lib/types'
 import { useHousehold } from '@/components/household/HouseholdProvider'
 import { useHouseholdData } from '@/components/household/HouseholdData'
@@ -101,7 +101,7 @@ export default function FoyerClient() {
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/auth/login'
+    reloadTo('/auth/login')
   }
 
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'

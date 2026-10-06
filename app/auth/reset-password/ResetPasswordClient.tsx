@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { reloadTo } from '@/lib/utils'
 import AuthShell from '@/components/auth/AuthShell'
 import Button, { buttonClass } from '@/components/ui/Button'
 import Notice from '@/components/ui/Notice'
@@ -59,7 +60,7 @@ export default function ResetPasswordClient() {
         return
       }
       setDone(true)
-      setTimeout(() => { window.location.href = '/congelateur' }, 1500)
+      setTimeout(() => reloadTo('/congelateur'), 1500)
     } catch {
       setError('Impossible de joindre le serveur. Vérifiez votre connexion.')
     } finally {
