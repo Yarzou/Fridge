@@ -233,3 +233,15 @@ Rappels réglables par chaque personne, sur le modèle des notifications de neig
   - `npm run lint` : aucune remarque ; `npm run typecheck` : OK ; `npm run build` : OK sous Next 16.3.8 ;
   - parcours rejoués sur un faux Supabase local : sortie et « Annuler », fin de stock vers les courses, saisie libre, « Ranger », scanner (code-barres et QR), barre d'onglets, interrupteurs, haut d'écran iOS ; en-têtes de sécurité inchangés ;
   - nodemailer 10 : transport Gmail et construction d'un message vérifiés hors réseau ; **envoi réel non essayé**.
+
+## 2026-10-06 — Premières PR de Dependabot
+
+Cinq PR ouvertes le jour même. Chacune a été examinée sur sa branche (`git fetch`) et dans le journal des changements du paquet.
+- **À fusionner** :
+  - `@supabase/ssr` 0.10.3 → 0.12.7 (groupe « mineures ») : surtout des correctifs de cookies. Le nouvel encodage `cookies.encode` est optionnel, et le format par défaut ne change pas. On ne passe pas d'`auth.storage`, donc le nouvel avertissement ne s'affiche pas ;
+  - `dotenv` 17 → 18 : ne sert qu'à `scripts/db-migrate.js`. Le `config({ path })` utilisé marche à l'identique (essayé sur un fichier factice), et le message « injected env » passe sur stderr. La v18 retire le préchargement et `.env.vault`, dont Fridge ne se sert pas.
+- **À fermer** :
+  - `tailwindcss` 3 → 4 : le build échoue, c'est une migration de configuration à faire à part ;
+  - `tailwind-merge` 2 → 3 : la v3 ne gère plus Tailwind 3, selon ses propres notes de version. Elle suivra la migration ;
+  - `@types/node` 20 → 26 : les types doivent suivre le Node qui fait tourner l'appli, et non la dernière version parue.
+- `.github/dependabot.yml` : ces trois versions majeures sont écartées par des règles `ignore`. Les correctifs et les mineures de ces paquets restent proposés.
