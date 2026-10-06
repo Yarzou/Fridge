@@ -4,7 +4,9 @@ import { cn } from '@/lib/utils'
 
 /**
  * Interrupteur iOS (51 × 31). Le bouton fait 44 px de haut : la zone de
- * touche dépasse la piste.
+ * touche dépasse la piste. La pastille (27 px) est ancrée à gauche
+ * (left-0.5) et glisse de 20 px : 2 px de marge de chaque côté, sans jamais
+ * sortir de la piste.
  */
 export default function Switch({
   checked,
@@ -36,8 +38,8 @@ export default function Switch({
       >
         <span
           className={cn(
-            'absolute top-0.5 h-[27px] w-[27px] rounded-full bg-knob shadow-[0_2px_4px_rgba(0,0,0,0.2)] transition-transform duration-200',
-            checked ? 'translate-x-[22px]' : 'translate-x-0.5',
+            'absolute left-0.5 top-0.5 h-[27px] w-[27px] rounded-full bg-knob shadow-[0_2px_4px_rgba(0,0,0,0.2)] transition-transform duration-200',
+            checked ? 'translate-x-5' : 'translate-x-0',
           )}
         />
       </span>
