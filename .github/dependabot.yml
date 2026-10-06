@@ -22,5 +22,21 @@ updates:
     groups:
       mineures:
         update-types: [minor, patch]
+    # Versions majeures écartées volontairement (correctifs et mineures toujours
+    # proposés) :
+    ignore:
+      # Tailwind 4 change toute la configuration (tailwind.config.ts, PostCSS,
+      # globals.css) : c'est une migration à part, pas une montée de version.
+      - dependency-name: tailwindcss
+        update-types: ['version-update:semver-major']
+      # tailwind-merge 3 ne gère plus que Tailwind 4 : il viendra avec la
+      # migration ci-dessus. D'ici là, rester en 2.x.
+      - dependency-name: tailwind-merge
+        update-types: ['version-update:semver-major']
+      # Les types de Node suivent la version de Node qui fait tourner l'appli,
+      # pas la dernière parue : sinon, on peut appeler une API qui n'existe pas
+      # en production.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'chore(deps)'
