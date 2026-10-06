@@ -1,5 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cache du routeur côté téléphone. Les pages de l'appli sont dynamiques (le
+  // layout lit la session), donc Next ne les garde pas par défaut : chaque
+  // changement d'onglet repartait au serveur. Elles n'ont pourtant aucune
+  // donnée serveur (tout vient de HouseholdDataProvider) : les garder ne
+  // montre jamais rien de périmé.
+  // - static : pages préchargées en entier (onglets, scanner, « Ajouter » :
+  //   prefetch={true}), gardées 1 h ;
+  // - dynamic : pages ouvertes sans préchargement (produit, tiroir), 5 min.
+  experimental: {
+    staleTimes: {
+      dynamic: 300,
+      static: 3600,
+    },
+  },
   async headers() {
     return [
       {

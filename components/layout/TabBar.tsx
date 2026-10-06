@@ -21,6 +21,9 @@ const TABS: Tab[] = [
   { href: '/foyer', label: 'Foyer', icon: House },
 ]
 
+/** Pages préchargées en entier : changer d'onglet ou ouvrir le scanner part du cache. */
+const PREFETCHED = [...TABS.map(tab => tab.href), '/scanner']
+
 /** Marge intérieure de la barre (p-1), en px : la bulle ne la franchit pas. */
 const INSET = 4
 /** Marge de la bulle autour de l'icône et du libellé, de chaque côté. */
@@ -80,6 +83,18 @@ export default function TabBar() {
     contentRefs.current.forEach(content => content && observer.observe(content))
     return () => observer.disconnect()
   }, [])
+
+  // Les liens préchargent les onglets et le scanner à l'ouverture (prefetch,
+  // en production). Au retour au premier plan, le cache du routeur a pu
+  // expirer pendant la veille : on le remplit de nouveau, pour que le
+  // prochain toucher n'attende pas le serveur.
+  useEffect(() => {
+    const warm = () => {
+      if (document.visibilityState === 'visible') PREFETCHED.forEach(href => router.prefetch(href))
+    }
+    document.addEventListener('visibilitychange', warm)
+    return () => document.removeEventListener('visibilitychange', warm)
+  }, [router])
 
   const activeIndex = TABS.findIndex(
     ({ href, also }) => pathname.startsWith(href) || (also ?? []).some(p => pathname.startsWith(p)),
@@ -185,6 +200,7 @@ export default function TabBar() {
               <Link
                 key={href}
                 href={href}
+                prefetch
                 draggable={false}
                 onClick={() => mark(i)}
                 aria-current={i === activeIndex ? 'page' : undefined}
@@ -220,6 +236,7 @@ export default function TabBar() {
         </div>
         <Link
           href="/scanner"
+          prefetch
           aria-label="Scanner"
           className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-accent-fill text-white shadow-float"
         >

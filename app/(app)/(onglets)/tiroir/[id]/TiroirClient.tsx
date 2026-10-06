@@ -159,7 +159,7 @@ export default function TiroirClient({ id, fromQr }: { id: string; fromQr: boole
                   )}
                 >
                   <CategoryTile slug={item.category_slug} size="lg" />
-                  <Link href={`/produit/${item.id}?retour=/tiroir/${id}`} className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                  <Link href={`/produit/${item.id}?retour=/tiroir/${id}`} prefetch className="flex min-w-0 flex-1 flex-col gap-[3px]">
                     <span className="text-body">{item.name}</span>
                     <span className="text-footnote text-ink-muted">{meta(item)}</span>
                     <DueBadge due={due} />
@@ -211,6 +211,7 @@ export default function TiroirClient({ id, fromQr }: { id: string; fromQr: boole
         })}
         <Link
           href={`/ajouter?tiroir=${id}&retour=/tiroir/${id}`}
+          prefetch
           className="flex min-h-[52px] items-center gap-3 border-t border-separator px-4 text-body text-accent first:border-t-0"
         >
           <CirclePlus size={22} aria-hidden="true" />

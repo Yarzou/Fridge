@@ -144,6 +144,7 @@ export default function CongelateurClient() {
           </button>
           <Link
             href={addHref}
+            prefetch
             aria-label="Ajouter un produit"
             className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-accent shadow-lift"
           >
@@ -248,6 +249,7 @@ export default function CongelateurClient() {
               <Link
                 key={item.id}
                 href={`/produit/${item.id}`}
+                prefetch
                 className="flex w-[150px] shrink-0 flex-col gap-2 rounded-2xl bg-card p-3"
               >
                 <CategoryTile slug={item.category_slug} size="md" />
@@ -274,7 +276,7 @@ export default function CongelateurClient() {
             <Link href="/scanner" className={buttonClass('secondary')}>
               <ScanLine size={18} aria-hidden="true" /> Scanner
             </Link>
-            <Link href={addHref} className={buttonClass('primary')}>
+            <Link href={addHref} prefetch className={buttonClass('primary')}>
               <Plus size={18} aria-hidden="true" /> Ajouter
             </Link>
           </div>
@@ -292,7 +294,7 @@ export default function CongelateurClient() {
               {group.tile}
               <h2 className="text-title">
                 {group.href ? (
-                  <Link href={group.href} className="inline-flex items-center gap-1">
+                  <Link href={group.href} prefetch className="inline-flex items-center gap-1">
                     {group.title}
                     <ChevronRight size={18} strokeWidth={2.6} className="text-ink-faint" aria-hidden="true" />
                   </Link>
@@ -340,6 +342,7 @@ export default function CongelateurClient() {
                 >
                   <Link
                     href={`/produit/${item.id}`}
+                    prefetch
                     draggable={false}
                     className={cn(
                       'flex min-h-[62px] items-center gap-3 px-4 py-2.5',
