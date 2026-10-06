@@ -30,6 +30,12 @@ export function addMonths(iso: string, months: number): string {
   return toIsoDate(date)
 }
 
+export function addDays(iso: string, days: number): string {
+  const date = parseIsoDate(iso)
+  date.setDate(date.getDate() + days)
+  return toIsoDate(date)
+}
+
 /** Jours entre aujourd'hui et `iso` : négatif si la date est passée. */
 export function daysBetween(fromIso: string, toIso: string): number {
   const ms = parseIsoDate(toIso).getTime() - parseIsoDate(fromIso).getTime()

@@ -28,6 +28,7 @@ import Segmented from '@/components/ui/Segmented'
 import SwipeRow from '@/components/ui/SwipeRow'
 import Notice from '@/components/ui/Notice'
 import { buttonClass } from '@/components/ui/Button'
+import PushPrompt from '@/components/push/PushPrompt'
 
 type View = 'categories' | 'tiroirs' | 'dates'
 
@@ -257,6 +258,8 @@ export default function CongelateurClient() {
           </div>
         </section>
       )}
+
+      {data.status === 'ready' && !needle && stock.length > 0 && <PushPrompt />}
 
       {data.status === 'ready' && stock.length === 0 && (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-xl bg-card px-5 py-6 text-center">

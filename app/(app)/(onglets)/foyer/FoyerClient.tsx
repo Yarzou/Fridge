@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CalendarDays, ChevronRight, CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
+import { ChevronRight, CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME } from '@/lib/app'
 import { cn, formatDate, initial, plural } from '@/lib/utils'
@@ -11,6 +11,7 @@ import { useHousehold } from '@/components/household/HouseholdProvider'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import { THEME_LABELS, useTheme, type ThemeChoice } from '@/components/theme/theme'
 import PasskeyRows from '@/components/foyer/PasskeyRows'
+import ReminderSettings from '@/components/foyer/ReminderSettings'
 import PageHeader from '@/components/ui/PageHeader'
 import Notice from '@/components/ui/Notice'
 import Segmented from '@/components/ui/Segmented'
@@ -223,29 +224,7 @@ export default function FoyerClient() {
         )}
       </ListSection>
 
-      <ListSection
-        header="Rappels"
-        footer="Bientôt : une notification quand un produit approche de sa date, et un récapitulatif chaque semaine."
-      >
-        <ListRow
-          leading={
-            <IconTile className="bg-tile-bell">
-              <Bell size={18} aria-hidden="true" />
-            </IconTile>
-          }
-          title="Produits à consommer"
-          trailing={<span className="text-body text-ink-muted">Bientôt</span>}
-        />
-        <ListRow
-          leading={
-            <IconTile className="bg-tile-purple">
-              <CalendarDays size={18} aria-hidden="true" />
-            </IconTile>
-          }
-          title="Récapitulatif"
-          trailing={<span className="text-body text-ink-muted">Bientôt</span>}
-        />
-      </ListSection>
+      <ReminderSettings userId={userId} />
 
       <PasskeyRows />
 

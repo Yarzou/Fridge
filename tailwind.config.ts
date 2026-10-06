@@ -59,7 +59,7 @@ const config: Config = {
           action: 'var(--toast-action)',
         },
         badge: 'var(--badge)',
-        'sheet-band': 'var(--sheet-band)',
+        knob: 'var(--knob)',
         // Tuiles d'icônes (catégories, rayons, avatars) : mêmes teintes en clair
         // et en sombre, icône ou initiale blanche dessus (≥ 4,5:1). En hex et non
         // en variables CSS pour garder les opacités (`bg-tile-green/15`).

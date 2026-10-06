@@ -40,8 +40,8 @@
   --toast: #1c1c1e;         /* toast « Annuler », texte blanc */
   --toast-action: #9cc3ff;  /* bouton « Annuler » du toast : 8,6:1 sur --toast */
   --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
-  --sheet-band: #5c5c61;    /* carte du dessous, derrière une feuille */
   --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
+  --knob: #ffffff;          /* pastille d'un interrupteur, blanche dans les deux modes */
 }
 
 html.dark {
@@ -74,8 +74,8 @@ html.dark {
   --toast: #3a3a3c;
   --toast-action: #9cc3ff;
   --badge: #c2410c;
-  --sheet-band: #2c2c2e;
   --tile-ink: #48484a;
+  --knob: #ffffff;
 }
 
 html,
@@ -121,10 +121,6 @@ textarea::placeholder {
   /* Courses : la liste laisse aussi la place à l'encart « surgelés dans le panier » */
   .pb-tabbar-card {
     padding-bottom: calc(env(safe-area-inset-bottom) + 190px);
-  }
-  /* Feuille (Ajouter, Modifier) : elle part sous l'encoche, la carte du dessous dépasse */
-  .top-sheet {
-    top: calc(env(safe-area-inset-top) + 12px);
   }
   /* Défilement horizontal sans barre visible (« À consommer bientôt ») */
   .no-scrollbar {

@@ -4,6 +4,74 @@
     {
       "path": "/api/keepalive",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/rappels?h=05",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/rappels?h=06",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/rappels?h=07",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/rappels?h=08",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/rappels?h=09",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/rappels?h=10",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/rappels?h=11",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/rappels?h=12",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/rappels?h=13",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/rappels?h=14",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/rappels?h=15",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/rappels?h=16",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/rappels?h=17",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/rappels?h=18",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/rappels?h=19",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/rappels?h=20",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/rappels?h=21",
+      "schedule": "0 21 * * *"
     }
   ]
 }
