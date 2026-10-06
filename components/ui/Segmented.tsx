@@ -20,8 +20,8 @@ const INSET = 2
 const GAP = 2
 
 /**
- * Contrôle segmenté iOS : fond gris, segment choisi en relief. Le relief est
- * une pastille qui se déplace, comme la bulle de la barre d'onglets (iOS 26) :
+ * Contrôle segmenté iOS 26 : capsule grise, segment choisi en relief. Le
+ * relief est une pastille qui se déplace, comme la bulle de la barre d'onglets :
  * - au toucher d'un autre segment, elle y glisse en s'étirant comme une goutte ;
  * - doigt posé sur le segment choisi, elle se soulève en verre ;
  * - si l'on fait glisser le doigt, elle le suit, puis se pose sur le segment
@@ -130,7 +130,7 @@ export default function Segmented<T extends string>({
           swallowClick.current = false
         }
       }}
-      className={cn('relative grid touch-pan-y select-none gap-0.5 rounded-[9px] bg-fill p-0.5', className)}
+      className={cn('relative grid touch-pan-y select-none gap-0.5 rounded-full bg-fill p-0.5', className)}
       style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`, ...style }}
     >
       {(index >= 0 || drag) && (
@@ -145,7 +145,7 @@ export default function Segmented<T extends string>({
           <span
             key={touched ? index : 'repos'}
             className={cn(
-              'block h-full w-full rounded-[7px] transition-[transform,background-color,box-shadow] duration-200',
+              'block h-full w-full rounded-full transition-[transform,background-color,box-shadow] duration-200',
               lifted ? 'bg-lens shadow-lifted motion-safe:scale-[1.12]' : 'bg-seg shadow-lift',
               touched && !lifted && 'motion-safe:animate-bubble',
             )}
@@ -167,7 +167,7 @@ export default function Segmented<T extends string>({
               onChange(option.value)
             }}
             className={cn(
-              'relative z-10 min-w-0 truncate rounded-[7px] px-1 text-ink',
+              'relative z-10 min-w-0 truncate rounded-full px-1 text-ink',
               i === shown && 'font-semibold',
               itemClassName,
             )}
