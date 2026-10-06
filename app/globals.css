@@ -32,6 +32,16 @@
   --glass-edge: rgba(0, 0, 0, 0.06);
   --shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --seg: #ffffff;           /* segment actif d'un contrôle segmenté */
+  --chip-edge: #d1d1d6;     /* bord des pastilles non choisies */
+  --grabber: #c7c7cc;       /* poignée des feuilles */
+  --accent-wash: #eef4fd;   /* ligne qu'on vient de toucher, encart « plus rien en stock » */
+  --swipe: #636366;         /* action grise d'une ligne glissée (« Tout sortir ») */
+  --toast: #1c1c1e;         /* toast « Annuler », texte blanc */
+  --toast-action: #9cc3ff;  /* bouton « Annuler » du toast : 8,6:1 sur --toast */
+  --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
+  --sheet-band: #5c5c61;    /* carte du dessous, derrière une feuille */
+  --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
 }
 
 html.dark {
@@ -56,6 +66,16 @@ html.dark {
   --glass-edge: rgba(255, 255, 255, 0.08);
   --shadow-lift: none;
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --seg: #636366;
+  --chip-edge: #48484a;
+  --grabber: #48484a;
+  --accent-wash: #13233d;
+  --swipe: #48484a;
+  --toast: #3a3a3c;
+  --toast-action: #9cc3ff;
+  --badge: #c2410c;
+  --sheet-band: #2c2c2e;
+  --tile-ink: #48484a;
 }
 
 html,
@@ -93,5 +113,41 @@ textarea::placeholder {
   }
   .bottom-tabbar {
     bottom: calc(env(safe-area-inset-bottom) + 10px);
+  }
+  /* Toast « Annuler » et encart flottant : juste au-dessus de la barre d'onglets */
+  .bottom-toast {
+    bottom: calc(env(safe-area-inset-bottom) + 90px);
+  }
+  /* Courses : la liste laisse aussi la place à l'encart « surgelés dans le panier » */
+  .pb-tabbar-card {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 190px);
+  }
+  /* Feuille (Ajouter, Modifier) : elle part sous l'encoche, la carte du dessous dépasse */
+  .top-sheet {
+    top: calc(env(safe-area-inset-top) + 12px);
+  }
+  /* Défilement horizontal sans barre visible (« À consommer bientôt ») */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Champ de recherche : pas de croix native, la page a la sienne */
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+/* Étiquettes QR : une page A4. Le fond reste blanc même en mode sombre. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #ffffff;
   }
 }

@@ -49,6 +49,38 @@ const config: Config = {
           DEFAULT: 'var(--glass)',
           edge: 'var(--glass-edge)',
         },
+        seg: 'var(--seg)',
+        'chip-edge': 'var(--chip-edge)',
+        grabber: 'var(--grabber)',
+        'accent-wash': 'var(--accent-wash)',
+        swipe: 'var(--swipe)',
+        toast: {
+          DEFAULT: 'var(--toast)',
+          action: 'var(--toast-action)',
+        },
+        badge: 'var(--badge)',
+        'sheet-band': 'var(--sheet-band)',
+        // Tuiles d'icônes (catégories, rayons, avatars) : mêmes teintes en clair
+        // et en sombre, icône ou initiale blanche dessus (≥ 4,5:1). En hex et non
+        // en variables CSS pour garder les opacités (`bg-tile-green/15`).
+        tile: {
+          red: '#c2413a',
+          blue: '#2f6fb3',
+          green: '#3b8a3e',
+          forest: '#2f7a33',
+          leaf: '#4d7c0f',
+          pink: '#b03a6e',
+          orange: '#c46a12',
+          brown: '#a65a0e',
+          amber: '#b45309',
+          ice: '#2f8fb8',
+          dairy: '#3a6ea5',
+          teal: '#0f766e',
+          purple: '#6e56cf',
+          slate: '#56657a',
+          bell: '#c2410c',
+          ink: 'var(--tile-ink)',
+        },
       },
       fontFamily: {
         // Police système : SF Pro sur iPhone, Roboto sur Android. Aucun webfont à charger.

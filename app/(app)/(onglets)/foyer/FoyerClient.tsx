@@ -1,29 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Copy, Share, Snowflake, UserPlus } from 'lucide-react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Bell, CalendarDays, ChevronRight, CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME } from '@/lib/app'
 import { cn, formatDate, initial, plural } from '@/lib/utils'
-import { HOUSEHOLD_ROLE_LABELS, type HouseholdMember, type HouseholdRole } from '@/lib/types'
+import { HOUSEHOLD_ROLE_LABELS } from '@/lib/types'
 import { useHousehold } from '@/components/household/HouseholdProvider'
+import { useHouseholdData } from '@/components/household/HouseholdData'
 import { THEME_LABELS, useTheme, type ThemeChoice } from '@/components/theme/theme'
 import PasskeyRows from '@/components/foyer/PasskeyRows'
 import PageHeader from '@/components/ui/PageHeader'
 import Notice from '@/components/ui/Notice'
+import Segmented from '@/components/ui/Segmented'
 import { IconTile, ListRow, ListSection } from '@/components/ui/List'
 
-interface MemberRow {
-  user_id: string
-  role: HouseholdRole
-  joined_at: string
-  profiles: { display_name: string } | null
-}
+/** Couleur d'avatar stable par personne (l'initiale est blanche dessus). */
+const AVATAR_TILES = ['bg-tile-brown', 'bg-tile-forest', 'bg-tile-purple', 'bg-tile-red', 'bg-tile-blue', 'bg-tile-teal']
 
-interface FreezerRow {
-  id: string
-  name: string
-  compartments: { id: string }[]
+function avatarTile(userId: string) {
+  let hash = 0
+  for (const char of userId) hash = (hash * 31 + char.charCodeAt(0)) | 0
+  return AVATAR_TILES[Math.abs(hash) % AVATAR_TILES.length]
 }
 
 interface Invitation {
@@ -33,15 +32,19 @@ interface Invitation {
 
 const THEME_ORDER: ThemeChoice[] = ['system', 'light', 'dark']
 
-/** Onglet Foyer : membres et invitation, congélateurs, connexion, apparence, compte. */
+/**
+ * Onglet Foyer (maquette « Foyer ») : membres et invitation, congélateurs et
+ * étiquettes QR des tiroirs, rappels, connexion, apparence, compte.
+ */
 export default function FoyerClient() {
+  const router = useRouter()
   const { household, userId } = useHousehold()
+  const data = useHouseholdData()
   const [supabase] = useState(() => createClient())
   const { theme, setTheme } = useTheme()
 
-  const [members, setMembers] = useState<HouseholdMember[] | null>(null)
-  const [freezers, setFreezers] = useState<FreezerRow[] | null>(null)
-  const [loadError, setLoadError] = useState(false)
+  const members = data.status === 'ready' ? data.members : null
+  const drawerCount = data.freezers.reduce((n, f) => n + f.compartments.length, 0)
 
   const [invitation, setInvitation] = useState<Invitation | null>(null)
   const [inviting, setInviting] = useState(false)
@@ -49,39 +52,6 @@ export default function FoyerClient() {
   const [copied, setCopied] = useState(false)
 
   const isAdmin = household.role === 'admin'
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      supabase
-        .from('household_members')
-        .select('user_id, role, joined_at, profiles ( display_name )')
-        .eq('household_id', household.id)
-        .order('joined_at'),
-      supabase
-        .from('freezers')
-        .select('id, name, compartments ( id )')
-        .eq('household_id', household.id)
-        .order('position'),
-    ]).then(([membersRes, freezersRes]) => {
-      if (cancelled) return
-      if (membersRes.error || freezersRes.error) {
-        console.error('[foyer]', membersRes.error ?? freezersRes.error)
-        setLoadError(true)
-        return
-      }
-      setMembers(
-        (membersRes.data as unknown as MemberRow[]).map(m => ({
-          user_id: m.user_id,
-          role: m.role,
-          joined_at: m.joined_at,
-          display_name: m.profiles?.display_name ?? 'Membre',
-        })),
-      )
-      setFreezers(freezersRes.data as unknown as FreezerRow[])
-    })
-    return () => { cancelled = true }
-  }, [supabase, household.id])
 
   // Deux temps volontaires : créer le lien, puis le partager. Safari refuse
   // navigator.share() s'il n'est pas appelé directement par un geste, or
@@ -142,25 +112,35 @@ export default function FoyerClient() {
         subtitle={members ? `Partagé par ${plural(members.length, 'personne')}` : undefined}
       />
 
-      {loadError && <Notice tone="danger">Impossible de charger le foyer. Vérifiez votre connexion.</Notice>}
+      {data.status === 'error' && (
+        <Notice tone="danger">Impossible de charger le foyer. Vérifiez votre connexion.</Notice>
+      )}
 
       <div className="flex flex-col gap-3">
         <ListSection header="Membres">
-          {members?.map(m => (
-            <ListRow
-              key={m.user_id}
-              leading={
-                <span className="my-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-accent-fill text-subhead font-semibold text-white">
-                  {initial(m.display_name)}
-                </span>
-              }
-              title={m.user_id === userId ? `${m.display_name} (vous)` : m.display_name}
-              subtitle={HOUSEHOLD_ROLE_LABELS[m.role]}
-            />
-          ))}
+          {members?.map(m => {
+            const me = m.user_id === userId
+            return (
+              <ListRow
+                key={m.user_id}
+                leading={
+                  <span
+                    className={cn(
+                      'my-2.5 flex h-9 w-9 items-center justify-center rounded-full text-subhead font-semibold text-white',
+                      me ? 'bg-accent-fill' : avatarTile(m.user_id),
+                    )}
+                  >
+                    {me ? <User size={20} aria-hidden="true" /> : initial(m.display_name)}
+                  </span>
+                }
+                title={me ? 'Vous' : m.display_name}
+                subtitle={me ? `${m.display_name} · ${HOUSEHOLD_ROLE_LABELS[m.role]}` : HOUSEHOLD_ROLE_LABELS[m.role]}
+              />
+            )
+          })}
           {isAdmin && (
             <ListRow
-              leading={<span className="flex w-9 justify-center text-accent"><UserPlus size={22} aria-hidden="true" /></span>}
+              leading={<span className="flex w-9 justify-center text-accent"><CirclePlus size={24} aria-hidden="true" /></span>}
               title={inviting ? 'Création du lien…' : invitation ? 'Créer un autre lien' : 'Inviter par un lien'}
               tone="accent"
               onClick={createInvitation}
@@ -204,37 +184,80 @@ export default function FoyerClient() {
         {inviteError && <Notice tone="danger">{inviteError}</Notice>}
       </div>
 
-      <ListSection header="Congélateurs">
-        {freezers?.map(f => (
+      <ListSection
+        header="Congélateurs"
+        footer="Un QR par tiroir, collé sur la porte. Scanné depuis l’appli, il ouvre le tiroir : on sort un produit en un geste."
+      >
+        {data.freezers.map((f, index) => {
+          const count = data.items.filter(i => i.freezer_id === f.id && i.quantity > 0).length
+          const drawers = f.compartments.length === 0 ? 'Sans tiroir' : plural(f.compartments.length, 'tiroir')
+          return (
+            <ListRow
+              key={f.id}
+              leading={
+                <IconTile className={index === 0 ? 'bg-tile-ice' : 'bg-tile-slate'}>
+                  <Snowflake size={18} aria-hidden="true" />
+                </IconTile>
+              }
+              title={f.name}
+              subtitle={`${drawers} · ${count === 0 ? 'vide' : plural(count, 'produit')}`}
+              trailing={<ChevronRight size={18} strokeWidth={2.4} className="shrink-0 text-ink-faint" aria-hidden="true" />}
+              onClick={() => {
+                data.selectFreezer(f.id)
+                router.push('/congelateur')
+              }}
+            />
+          )
+        })}
+        {drawerCount > 0 && (
           <ListRow
-            key={f.id}
-            leading={<IconTile className="bg-accent-fill"><Snowflake size={18} aria-hidden="true" /></IconTile>}
-            title={f.name}
-            subtitle={f.compartments.length === 0 ? 'Sans tiroir' : plural(f.compartments.length, 'tiroir')}
+            href="/etiquettes"
+            leading={
+              <IconTile className="bg-tile-ink">
+                <QrCode size={18} aria-hidden="true" />
+              </IconTile>
+            }
+            title="Imprimer les QR des tiroirs"
+            subtitle={`${plural(drawerCount, 'étiquette')} sur une page A4`}
           />
-        ))}
+        )}
+      </ListSection>
+
+      <ListSection
+        header="Rappels"
+        footer="Bientôt : une notification quand un produit approche de sa date, et un récapitulatif chaque semaine."
+      >
+        <ListRow
+          leading={
+            <IconTile className="bg-tile-bell">
+              <Bell size={18} aria-hidden="true" />
+            </IconTile>
+          }
+          title="Produits à consommer"
+          trailing={<span className="text-body text-ink-muted">Bientôt</span>}
+        />
+        <ListRow
+          leading={
+            <IconTile className="bg-tile-purple">
+              <CalendarDays size={18} aria-hidden="true" />
+            </IconTile>
+          }
+          title="Récapitulatif"
+          trailing={<span className="text-body text-ink-muted">Bientôt</span>}
+        />
       </ListSection>
 
       <PasskeyRows />
 
       <section className="flex flex-col">
         <h2 className="mb-2 ml-4 text-footnote uppercase tracking-[0.3px] text-ink-muted">Apparence</h2>
-        <div className="grid grid-cols-3 gap-0.5 rounded-[9px] bg-fill p-0.5">
-          {THEME_ORDER.map(choice => (
-            <button
-              key={choice}
-              type="button"
-              aria-pressed={theme === choice}
-              onClick={() => setTheme(choice)}
-              className={cn(
-                'h-8 rounded-[7px] text-footnote',
-                theme === choice ? 'bg-card font-semibold shadow-lift' : 'text-ink',
-              )}
-            >
-              {THEME_LABELS[choice]}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Apparence"
+          value={theme}
+          onChange={setTheme}
+          options={THEME_ORDER.map(choice => ({ value: choice, label: THEME_LABELS[choice] }))}
+          itemClassName="h-8 text-footnote"
+        />
       </section>
 
       <ListSection>

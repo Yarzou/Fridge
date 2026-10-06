@@ -29,3 +29,6 @@ next-env.d.ts
 # liquibase
 liquibase/liquibase.properties
 liquibase/*.log
+
+# Moteur zxing copié par scripts/copy-zxing-wasm.js (postinstall)
+/public/zxing/

@@ -17,13 +17,13 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
-              // Open Food Facts (photos produits) s'ajoutera ici avec le scanner :
-              // https://images.openfoodfacts.org
-              "img-src 'self' data: blob: https://*.supabase.co",
+              // Photos des produits reconnus par le scanner (Open Food Facts)
+              "img-src 'self' data: blob: https://*.supabase.co https://images.openfoodfacts.org",
               "media-src 'self' blob:",
               "font-src 'self'",
-              // … et https://world.openfoodfacts.org ici pour l'API produits.
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              // API produits d'Open Food Facts, interrogée par le scanner (lib/openfoodfacts.ts).
+              // Le moteur zxing (.wasm) est servi par l'appli : 'self' suffit.
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://world.openfoodfacts.org",
               "worker-src 'self'",
               "manifest-src 'self'",
               "frame-ancestors 'none'",

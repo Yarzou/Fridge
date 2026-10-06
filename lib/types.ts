@@ -59,3 +59,32 @@ export interface InvitationPreview {
   expires_at: string
   is_valid: boolean
 }
+
+/** Article de la liste de courses (une seule liste par foyer). */
+export interface ShoppingItem {
+  id: string
+  household_id: string
+  name: string
+  aisle_slug: string
+  /** « ×2 », « 500 g »… */
+  note: string | null
+  checked: boolean
+  checked_at: string | null
+  /** Produit du congélateur dont c'est le rachat (« Fini au congélateur »). */
+  from_item_id: string | null
+  added_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Vocabulaire du foyer (household_aisle_terms) : le rayon d'un terme, et depuis
+ * la migration 002 combien de fois il a été ajouté (« Souvent achetés »).
+ */
+export interface AisleTerm {
+  term: string
+  aisle_slug: string
+  label: string | null
+  times_added: number
+  last_added_at: string | null
+}

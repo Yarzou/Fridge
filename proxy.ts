@@ -58,6 +58,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // zxing/ : moteur du scanner (.wasm), fichier public sans session à vérifier
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon|apple-icon|zxing/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|wasm)$).*)',
   ],
 }
