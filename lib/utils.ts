@@ -1,5 +1,20 @@
 import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
+
+/**
+ * tailwind-merge ne connaît pas l'échelle typographique iOS de
+ * tailwind.config.ts : il prenait `text-caption` ou `text-body` pour des
+ * couleurs, et les supprimait dès qu'une couleur suivait (`text-accent`). Les
+ * libellés de la barre d'onglets passaient ainsi de 11 à 16 px. On lui déclare
+ * ces tailles.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ text: ['large-title', 'title', 'body', 'subhead', 'footnote', 'caption'] }],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
