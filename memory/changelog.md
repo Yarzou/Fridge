@@ -219,3 +219,17 @@ Rappels réglables par chaque personne, sur le modèle des notifications de neig
   - appli installée simulée (`navigator.standalone`) : `--safe-top` = 86 px, en-tête à 94 px ; navigateur ordinaire inchangé (8 px).
 - Captures supprimées.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-06 — Sécurité des dépendances
+
+- `package.json` :
+  - next 16.2.4 → **16.3.8** (épinglé) : corrige l'alerte critique (déni de service sur les Server Components) et les failles de `postcss` et `sharp` qu'il embarque ;
+  - eslint-config-next → 16.3.8 ;
+  - nodemailer 8 → **10.0.15** : corrige le contournement de `disableFileAccess` et `disableUrlAccess` par l'option `raw`. Les changements cassants (Node 20 minimum, vérification TLS des contenus distants) ne touchent pas Fridge.
+- `npm audit --omit=dev` : **0 vulnérabilité** (4 avant). Restent 9 alertes d'outils de dev (Tailwind 3, plugin ESLint de Next), sans effet chez l'utilisateur ; leur vrai correctif est Tailwind 4.
+- `lib/utils.ts` : `reloadTo()` pour les rechargements complets voulus. La nouvelle règle `@next/next/no-location-assign-relative-destination` signalait `window.location.href = '/…'`. Utilisé par la déconnexion (Foyer, bienvenue), la création du foyer, l'acceptation d'une invitation et le nouveau mot de passe.
+- `.github/dependabot.yml` : une PR de mises à jour par semaine, mineures regroupées.
+- Vérifications :
+  - `npm run lint` : aucune remarque ; `npm run typecheck` : OK ; `npm run build` : OK sous Next 16.3.8 ;
+  - parcours rejoués sur un faux Supabase local : sortie et « Annuler », fin de stock vers les courses, saisie libre, « Ranger », scanner (code-barres et QR), barre d'onglets, interrupteurs, haut d'écran iOS ; en-têtes de sécurité inchangés ;
+  - nodemailer 10 : transport Gmail et construction d'un message vérifiés hors réseau ; **envoi réel non essayé**.
