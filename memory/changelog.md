@@ -264,3 +264,9 @@ Le même geste que la bulle de la barre d'onglets, à la façon d'iOS 26, là o�
   - sur une page d'essai temporaire, supprimée ensuite : interrupteur basculé au toucher, au glissé à gauche ou à droite, et à l'Espace après un glissé ;
   - captures supprimées.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-06 — Contrôles segmentés en capsule
+
+- `components/ui/Segmented.tsx` : le contrôle, sa pastille et ses segments prennent la forme d'une capsule (`rounded-full`), comme sur iOS 26. Ils avaient des coins de 9 et 7 px. Cela vaut pour « Catégories / Tiroirs / Dates », « Apparence » et le tiroir de la fiche produit. La marge intérieure des segments ne change pas (`px-1`), pour que les noms courts des tiroirs (46 px par segment) tiennent toujours.
+- Vérifié dans Chrome au format iPhone, sur une page d'essai temporaire, supprimée ensuite : les trois tailles, en clair et en sombre, au repos et pendant un glissé. Captures supprimées.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
