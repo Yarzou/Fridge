@@ -136,3 +136,53 @@ Les sept écrans validés sont développés : Congélateur, Tiroir, Ajouter, Sca
   - `note_shopping_term` : deux ajouts donnent `times_added = 2`, une correction change le rayon sans toucher au compteur. Un autre foyer est refusé par le RLS, et `anon` n'a pas le droit d'exécuter la fonction ;
   - `rollback` vers le tag : colonnes et fonction retirées, rayons retenus conservés, les deux versions du code marchent. Une nouvelle `update` réapplique 002 proprement.
 - **Non vérifié** : la vraie base (lecture refusée depuis la session), le Realtime entre deux téléphones, et la caméra d'un vrai iPhone ou Android.
+
+## 2026-10-06 — Rappels sur le téléphone, feuille plein écran
+
+Rappels réglables par chaque personne, sur le modèle des notifications de neighborshare. Le canal est le Web Push standard (VAPID) et non Firebase : pas de projet Firebase, pas de SDK côté client, et sur iPhone ça marche avec l'appli installée.
+
+### Base
+- `liquibase/changelog/003-rappels.sql` (+ master) :
+  - `push_subscriptions` : un abonnement par appareil, lu et supprimé par son propriétaire, enregistré par la RPC `save_push_subscription` (SECURITY DEFINER). Sur un téléphone partagé, l'appareil change de compte ;
+  - `reminder_settings` : réglages par personne et dates d'envoi, à `1970-01-01` par défaut ;
+  - chaque changeset a son `--rollback` ; le contrôle `grep` ne renvoie rien. **Non appliquée.**
+
+### Envoi
+- `lib/reminders.ts` : échéances dans le fuseau de la personne, fenêtre « déjà annoncé jusqu'au », textes (« 3 produits à consommer », « Le congélateur cette semaine »), options proposées.
+- `lib/push-server.ts` : envoi `web-push` (TTL 12 h) ; les abonnements expirés (404, 410) sont signalés.
+- `lib/reminders-server.ts` : tournée.
+  - Un rappel est réservé par un update conditionnel avant d'être envoyé : jamais deux fois, même avec des appels simultanés.
+  - Les produits sont lus une fois par foyer ; les abonnements expirés sont supprimés.
+- `app/api/rappels/route.ts` (`CRON_SECRET` obligatoire) et `app/api/rappels/test/route.ts` (session : les seuls appareils de la personne).
+- `vercel.json` : 17 crons, un par heure de 05 à 21 h UTC (7 h → 22 h à Paris, été comme hiver), chacun une fois par jour comme l'impose le plan Hobby. Pas de workflow GitHub, à la demande de l'utilisateur.
+- `package.json` : `web-push`, `@types/web-push`.
+
+### Téléphone
+- `public/sw.js` : `push` affiche la notification, `notificationclick` ramène l'appli sur la bonne page.
+- `lib/push.ts` : prise en charge (avec le cas de l'iPhone sans appli installée), activation et désactivation, réabonnement si la clé serveur a changé.
+- `components/foyer/ReminderSettings.tsx`, dans l'onglet Foyer :
+  - « Sur ce téléphone » ;
+  - « Produits à consommer » : de la veille à 14 jours avant, et l'heure ;
+  - « Récapitulatif » : jour et heure ;
+  - « Envoyer un rappel de test ».
+
+  Sans la migration 003, la section reste en « Bientôt ».
+- `components/push/PushPrompt.tsx` : invitation « Être prévenu à temps » sur l'onglet Congélateur, que « Plus tard » masque 30 jours. `components/push/PushSync.tsx` rattache l'abonnement au compte à chaque ouverture.
+- `components/ui/Switch.tsx` (interrupteur iOS), token `knob`.
+- `.env.local.example` : `CRON_SECRET`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+
+### Correctif
+- `components/layout/Sheet.tsx` : la feuille « Nouveau produit / Modifier » prend tout l'écran. La bande grise qui imitait la carte iOS du dessous, vue comme un « double fond », est retirée, tout comme le token `sheet-band` et l'utilitaire `.top-sheet`.
+
+### Vérifications
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+- **Migration 003, compatibilité n-1**, avec le Liquibase du projet sur un PostgreSQL jetable :
+  - base n-1 = `HEAD` (001 + 002) : le code n-1 marche, et le code n se replie (section « Bientôt », invitation masquée, tournée sautée) ;
+  - `update` : 5 changesets appliqués, 26 reconnus sans écart de checksum ;
+  - règles d'accès : chacun ne voit et ne supprime que ses appareils, aucune insertion directe, `anon` refusé, endpoint non HTTPS et réglages hors bornes refusés ; un téléphone partagé change de compte ; un rappel n'est réservé qu'une fois par jour ;
+  - `rollback` vers le tag puis nouvelle `update` : propres.
+- De bout en bout dans Chrome, contre un faux Supabase local :
+  - activation depuis l'onglet Foyer : abonnement auprès de `fcm.googleapis.com`, enregistré, réglages sauvegardés avec le fuseau du téléphone ;
+  - `/api/rappels` envoie 1 rappel, accepté par Google (201) ; la tournée suivante n'envoie rien ;
+  - sans le secret, la route répond 401 ; le bouton de test envoie.
+- **Non vérifié** : l'affichage d'une notification. Le Chrome de ce poste ne joint pas le service push de Google (port 5228, « WAITING FOR BACKOFF »), et le test local qui contournait ce blocage a été interrompu. À faire sur un téléphone, une fois déployé.
