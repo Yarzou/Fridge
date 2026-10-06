@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Snowflake } from 'lucide-react'
+import StatusBarShield from '@/components/layout/StatusBarShield'
 
 /** Écran plein des parcours de connexion : tuile d'appli, titre, contenu centré. */
 export default function AuthShell({
@@ -13,6 +14,7 @@ export default function AuthShell({
 }) {
   return (
     <main className="pt-safe pb-safe mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4">
+      <StatusBarShield />
       <div className="mb-8 flex flex-col items-center text-center">
         <span className="mb-4 flex h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-accent-fill text-white">
           <Snowflake size={38} strokeWidth={1.8} aria-hidden="true" />

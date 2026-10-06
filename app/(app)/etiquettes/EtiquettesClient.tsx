@@ -7,6 +7,7 @@ import { APP_NAME } from '@/lib/app'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import QrCodeSvg from '@/components/inventory/QrCodeSvg'
 import { buttonClass } from '@/components/ui/Button'
+import StatusBarShield from '@/components/layout/StatusBarShield'
 
 const noop = () => () => {}
 
@@ -25,6 +26,7 @@ export default function EtiquettesClient() {
 
   return (
     <main className="pt-safe pb-safe mx-auto w-full max-w-3xl px-4 print:max-w-none print:p-0">
+      <StatusBarShield />
       <header className="flex flex-col print:hidden">
         <div className="flex h-11 items-center">
           <Link href="/foyer" className="-ml-1.5 flex h-11 items-center gap-0.5 text-body text-accent">
