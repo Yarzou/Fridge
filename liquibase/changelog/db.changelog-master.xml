@@ -9,4 +9,8 @@
        liste de courses, tables de référence (catégories, rayons), RPC et RLS par foyer -->
   <include file="liquibase/changelog/001-schema-initial.sql"/>
 
+  <!-- Liste de courses : household_aisle_terms compte les ajouts (« Souvent achetés »),
+       RPC note_shopping_term -->
+  <include file="liquibase/changelog/002-vocabulaire-courses.sql"/>
+
 </databaseChangeLog>
