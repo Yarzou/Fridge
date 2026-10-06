@@ -47,6 +47,7 @@
   --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
   --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
   --knob: #ffffff;          /* pastille d'un interrupteur, blanche dans les deux modes */
+  --lens: rgba(255, 255, 255, 0.6);  /* pastille soulevée par le doigt (segment, interrupteur) : verre clair */
 }
 
 html.dark {
@@ -86,6 +87,7 @@ html.dark {
   --badge: #c2410c;
   --tile-ink: #48484a;
   --knob: #ffffff;
+  --lens: rgba(255, 255, 255, 0.2);
 }
 
 html,

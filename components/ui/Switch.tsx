@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useState, type PointerEvent } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -7,6 +8,12 @@ import { cn } from '@/lib/utils'
  * touche dépasse la piste. La pastille (27 px) est ancrée à gauche
  * (left-0.5) et glisse de 20 px : 2 px de marge de chaque côté, sans jamais
  * sortir de la piste.
+ *
+ * Comme sur iOS 26, la pastille réagit au doigt :
+ * - posé, elle s'allonge (37 px) et devient une lentille de verre ;
+ * - glissé, elle passe du côté où va le doigt, et l'interrupteur prend cette
+ *   position au lâcher ;
+ * - un simple toucher bascule l'interrupteur, comme avant.
  */
 export default function Switch({
   checked,
@@ -20,6 +27,47 @@ export default function Switch({
   label: string
   disabled?: boolean
 }) {
+  const gesture = useRef<{ startX: number; moved: boolean } | null>(null)
+  const swallowClick = useRef(false)
+  const [pressed, setPressed] = useState(false)
+  // Position visée pendant un glissé ; null hors glissé
+  const [aim, setAim] = useState<boolean | null>(null)
+  const on = aim ?? checked
+
+  const reset = () => {
+    gesture.current = null
+    setPressed(false)
+    setAim(null)
+  }
+
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    if (disabled || (e.pointerType === 'mouse' && e.button !== 0)) return
+    gesture.current = { startX: e.clientX, moved: false }
+    swallowClick.current = false
+    setPressed(true)
+  }
+
+  const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    const g = gesture.current
+    if (!g) return
+    const dx = e.clientX - g.startX
+    if (!g.moved) {
+      if (Math.abs(dx) < 6) return
+      g.moved = true
+      e.currentTarget.setPointerCapture(e.pointerId)
+    }
+    setAim(dx > 0)
+  }
+
+  const onPointerUp = () => {
+    const moved = gesture.current?.moved
+    reset()
+    if (!moved) return
+    // Fin d'un glissé : la position est choisie ici, pas par le clic qui suit
+    swallowClick.current = true
+    if (aim !== null && aim !== checked) onChange(aim)
+  }
+
   return (
     <button
       type="button"
@@ -27,19 +75,37 @@ export default function Switch({
       aria-checked={checked}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className="flex h-11 shrink-0 items-center disabled:opacity-40"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={reset}
+      onPointerLeave={() => {
+        // Souris sortie sans glisser : la pastille se repose
+        if (!gesture.current?.moved) reset()
+      }}
+      onClick={e => {
+        // Le clic du clavier (detail 0) n'est jamais celui d'un glissé
+        if (swallowClick.current && e.detail !== 0) {
+          swallowClick.current = false
+          return
+        }
+        onChange(!checked)
+      }}
+      className="flex h-11 shrink-0 touch-pan-y select-none items-center disabled:opacity-40"
     >
       <span
         className={cn(
           'relative h-[31px] w-[51px] rounded-full transition-colors duration-200',
-          checked ? 'bg-accent-fill' : 'bg-fill',
+          on ? 'bg-accent-fill' : 'bg-fill',
         )}
       >
         <span
           className={cn(
-            'absolute left-0.5 top-0.5 h-[27px] w-[27px] rounded-full bg-knob shadow-[0_2px_4px_rgba(0,0,0,0.2)] transition-transform duration-200',
-            checked ? 'translate-x-5' : 'translate-x-0',
+            'absolute left-0.5 top-0.5 h-[27px] rounded-full',
+            'transition-[transform,width,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.34,1.4,0.5,1)] motion-reduce:transition-none',
+            pressed
+              ? cn('w-[37px] bg-lens shadow-lifted motion-safe:scale-[1.15]', on ? 'translate-x-[10px]' : 'translate-x-0')
+              : cn('w-[27px] bg-knob shadow-[0_2px_4px_rgba(0,0,0,0.2)]', on ? 'translate-x-5' : 'translate-x-0'),
           )}
         />
       </span>

@@ -147,8 +147,9 @@ export default function TabBar() {
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
           onClickCapture={e => {
-            // Fin d'un glissé : la navigation est déjà partie, pas de second clic
-            if (swallowClick.current) {
+            // Fin d'un glissé : la navigation est déjà partie, pas de second clic.
+            // Le clic du clavier (detail 0) n'est jamais celui d'un glissé.
+            if (swallowClick.current && e.detail !== 0) {
               e.preventDefault()
               e.stopPropagation()
               swallowClick.current = false
