@@ -245,3 +245,22 @@ Cinq PR ouvertes le jour même. Chacune a été examinée sur sa branche (`git f
   - `tailwind-merge` 2 → 3 : la v3 ne gère plus Tailwind 3, selon ses propres notes de version. Elle suivra la migration ;
   - `@types/node` 20 → 26 : les types doivent suivre le Node qui fait tourner l'appli, et non la dernière version parue.
 - `.github/dependabot.yml` : ces trois versions majeures sont écartées par des règles `ignore`. Les correctifs et les mineures de ces paquets restent proposés.
+
+## 2026-10-06 — La bulle sur le contrôle segmenté et les interrupteurs
+
+Le même geste que la bulle de la barre d'onglets, à la façon d'iOS 26, là où Apple l'emploie.
+- `components/ui/Segmented.tsx` : la pastille du segment choisi est un élément à part, qui se déplace. Cela vaut pour « Catégories / Tiroirs / Dates », « Apparence » et le tiroir de la fiche produit :
+  - au toucher d'un autre segment, elle y glisse en s'étirant comme une goutte (`animate-bubble`) ;
+  - doigt posé sur le segment choisi, elle se soulève en verre ;
+  - au glissé, elle suit le doigt, puis se pose sur le segment le plus proche, qui est choisi ;
+  - un glissé vertical fait toujours défiler la page (`touch-pan-y`), sans rien choisir ;
+  - au repos, elle se place en pourcentages, sans mesure ;
+  - avec « Réduire les animations », elle se déplace sans effet.
+- `components/ui/Switch.tsx` : doigt posé, la pastille s'allonge (27 → 37 px) et devient une lentille de verre, un peu plus grande que la piste. Un glissé choisit le côté ; un toucher bascule, comme avant.
+- `app/globals.css`, `tailwind.config.ts` : couleur `lens` (verre clair, en clair et en sombre) et ombre `shadow-lifted`. Elle ne s'appelle pas `shadow-lens` : Tailwind générerait aussi la couleur d'ombre `shadow-lens`, qui l'effacerait. `shadow-bubble` est déjà dans ce cas, et on le laisse tel quel.
+- `components/layout/TabBar.tsx`, `Segmented`, `Switch` : le clic qui suit un glissé est ignoré, sauf s'il vient du clavier (`e.detail === 0`). Avant, après un glissé, l'appui suivant sur Espace ou Entrée était avalé une fois.
+- Vérifié dans Chrome au format iPhone, au toucher, en clair et en sombre :
+  - sur le Congélateur (faux Supabase local), un glissé choisit « Dates » et un toucher choisit « Tiroirs » ; un glissé vertical fait défiler la page sans rien changer ;
+  - sur une page d'essai temporaire, supprimée ensuite : interrupteur basculé au toucher, au glissé à gauche ou à droite, et à l'Espace après un glissé ;
+  - captures supprimées.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
