@@ -186,3 +186,16 @@ Rappels réglables par chaque personne, sur le modèle des notifications de neig
   - `/api/rappels` envoie 1 rappel, accepté par Google (201) ; la tournée suivante n'envoie rien ;
   - sans le secret, la route répond 401 ; le bouton de test envoie.
 - **Non vérifié** : l'affichage d'une notification. Le Chrome de ce poste ne joint pas le service push de Google (port 5228, « WAITING FOR BACKOFF »), et le test local qui contournait ce blocage a été interrompu. À faire sur un téléphone, une fois déployé.
+
+## 2026-10-06 — Barre d'onglets en verre et bulle, pas de flou sous la barre d'état
+
+- `components/layout/TabBar.tsx` : barre façon « Liquid Glass » d'Apple.
+  - Le verre est beaucoup plus transparent : 42 % au lieu de 88 %, flou de 40 px, saturation, reflet sur l'arête haute.
+  - L'onglet choisi est une bulle de verre. Au toucher, elle part aussitôt, sans attendre la page, et s'étire comme une goutte d'eau avant de se poser.
+  - En glissant le doigt sur la barre, la bulle suit en grossissant. Au lâcher, elle se pose sur l'onglet le plus proche, qui s'ouvre.
+  - Avec « Réduire les animations », plus d'effet.
+- `components/layout/StatusBarShield.tsx` : bande opaque sous l'heure et la batterie, pour qu'iOS n'y floute plus le contenu qui défile. Montée dans le layout des onglets, dans `AuthShell` et sur `/etiquettes`.
+- `app/globals.css`, `tailwind.config.ts` : tokens `tabbar`, `tabbar-edge`, `tabbar-highlight`, `bubble`, `bubble-edge`, ombres `glass` et `bubble`, animation `bubble`.
+- Vérifié dans Chrome au format iPhone, en clair et en sombre : bulle au repos, pendant un glissé, navigation vers Foyer au lâcher, transparence au-dessus du contenu. Captures supprimées.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+- **Non vérifié sur iPhone** : le téléphone affichait encore une version antérieure au correctif de la feuille, alors que le dernier commit était bien déployé.
