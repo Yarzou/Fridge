@@ -66,3 +66,73 @@ Cadrage confirmé :
   - `Permissions-Policy` correcte ;
   - lien d'invitation invalide → « Lien expiré ».
 - **Non vérifié** : tout ce qui touche une vraie base, puisque le projet Supabase n'existe pas encore et que la migration n'est pas appliquée. Pas d'essai non plus sur un téléphone.
+
+## 2026-10-06 — Écrans des maquettes : inventaire, scanner, courses
+
+Les sept écrans validés sont développés : Congélateur, Tiroir, Ajouter, Scanner, Courses, Foyer et mode sombre.
+
+### Données
+- `components/household/HouseholdData.tsx` : `HouseholdDataProvider` et `useHouseholdData()`.
+  - Un seul chargement pour tout le foyer : congélateurs et tiroirs, produits (en stock, plus ceux finis depuis 30 jours), courses, membres, vocabulaire des rayons.
+  - Realtime sur `items` et `shopping_items` ; les suppressions sont écoutées sans filtre. Tout est relu au retour au premier plan.
+  - Actions optimistes avec toast « Annuler » : `takeOut`, `addItem` (cumule un doublon du même jour et du même tiroir), `updateItem`, `deleteItem`, `renameCompartment`, `addShopping`, `toggleShopping`, `updateShopping`, `removeShopping`, `storeFrozen`.
+- `lib/categories.ts` : catégories (icône, couleur, durée), et `guessCategory()` d'après les étiquettes Open Food Facts ou le nom.
+- `lib/aisles.ts` : rayons, dictionnaire des termes, `guessAisle()`, `aisleForFreezerItem()` et `parseShoppingInput()` (« 2 avocats » → Avocats ×2).
+- `lib/dates.ts`, `lib/useToday.ts` : dates locales AAAA-MM-JJ, « congelé le… », « Dépassé de 5 j », « Dans 9 jours ».
+- `lib/units.ts` : conditionnements (sachet, portion…) et « 2 sachets ».
+- `lib/types.ts` : `ShoppingItem`, `AisleTerm`.
+- `liquibase/changelog/002-vocabulaire-courses.sql` (+ master) : colonnes `label`, `times_added` et `last_added_at` sur `household_aisle_terms`, RPC `note_shopping_term`. Chaque changeset a son `--rollback` ; le contrôle `grep` ne renvoie rien. **Non appliquée.**
+
+### Écrans
+- Routes : les onglets passent dans `app/(app)/(onglets)/`, dont le layout porte `<main>`, `UndoToast` et `TabBar`. `app/(app)/layout.tsx` monte `HouseholdDataProvider`.
+- `congelateur/CongelateurClient.tsx` :
+  - choix du congélateur, bouton +, recherche ;
+  - vues Catégories, Tiroirs et Dates ;
+  - « À consommer bientôt » en cartes défilantes ;
+  - ligne à glisser : « Sortir 1 », « Tout sortir ».
+- `tiroir/[id]/TiroirClient.tsx` :
+  - − en un tap, ligne surlignée et toast « Annuler » ;
+  - un produit fini propose « Ajouter aux courses » ou « Non merci » ;
+  - « Modifier » renomme le tiroir ;
+  - « Ajouter dans ce tiroir ».
+- `courses/CoursesClient.tsx` :
+  - liste par rayon, saisie libre, « Souvent achetés » ;
+  - coche, « Fini au congélateur » ;
+  - feuille de correction (nom, quantité, rayon retenu pour la suite) ;
+  - menu « Retirer les articles cochés » / « Tout remettre à acheter » ;
+  - encart « N surgelés dans le panier → Ranger ».
+- `foyer/FoyerClient.tsx` : avatars colorés, congélateurs avec tiroirs et produits, « Imprimer les QR des tiroirs », section « Rappels » (« Bientôt »), apparence en contrôle segmenté.
+- `app/(app)/ajouter`, `app/(app)/produit/[id]` et `components/inventory/ItemSheet.tsx` : feuille « Nouveau produit » / « Modifier le produit ».
+  - La date « À consommer avant » suit la catégorie tant qu'on ne la choisit pas à la main.
+  - Quantité et conditionnement, tiroir, dates par le sélecteur natif du téléphone.
+  - « Ajouter et scanner le suivant », suppression avec « Annuler ».
+- `app/(app)/scanner` :
+  - caméra arrière, lampe si le téléphone l'a, lecture zxing toutes les 200 ms ;
+  - code connu du foyer, sinon Open Food Facts ;
+  - « Déjà au congélateur : … », « Sortir 1 », « Ajouter » prérempli ;
+  - QR de tiroir → « Ouvrir le tiroir » ;
+  - saisie du code à la main si la caméra est refusée.
+- `app/(app)/etiquettes` et `components/inventory/QrCodeSvg.tsx` : une étiquette QR par tiroir, à imprimer sur A4.
+- Composants : `components/ui/{Segmented,SwipeRow,UndoToast}.tsx`, `components/inventory/CategoryTile.tsx` (`CategoryTile`, `DueBadge`), `components/layout/Sheet.tsx`. `TabBar` gagne le bouton Scanner et la pastille des courses.
+
+### Configuration
+- `package.json` : `zxing-wasm` et `uqr` ; `postinstall` lance `scripts/copy-zxing-wasm.js`, qui copie le moteur dans `public/zxing/` (gitignoré) pour ne pas dépendre de jsDelivr.
+- `next.config.js` : CSP ouverte à Open Food Facts (`connect-src` pour l'API, `img-src` pour les photos).
+- `proxy.ts` : `zxing/` et les `.wasm` sortent du matcher.
+- `app/globals.css`, `tailwind.config.ts` : tokens `seg`, `chip-edge`, `grabber`, `accent-wash`, `swipe`, `toast`, `badge`, `sheet-band`, palette `tile-*`, utilitaires `.bottom-toast`, `.top-sheet`, `.no-scrollbar`, mise en page d'impression.
+
+### Vérifications
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK (24 routes), avec des variables Supabase factices.
+- Essais dans Chrome au format iPhone (390 × 844), contre un faux Supabase local aux données de la maquette :
+  - tous les écrans, en clair et en sombre ;
+  - glisser une ligne puis « Sortir 1 », toast « il en reste 3 », « Annuler » remet 4 ;
+  - finir un produit du tiroir, puis « Ajouter aux courses » : il arrive en Poissonnerie ;
+  - « 500 g de comté » va en Crèmerie, avec 500 g ;
+  - « Ranger » : 2 produits rangés au congélateur ;
+  - scanner avec une caméra simulée : code-barres Häagen-Dazs lu et fiche Open Food Facts affichée en 0,4 s, feuille d'ajout préremplie (catégorie Glaces), QR du tiroir reconnu.
+- **Migration 002, compatibilité n-1**, vérifiée avec le Liquibase du projet sur un PostgreSQL jetable (PGlite), requêtes en rôle `authenticated` avec RLS :
+  - base n-1 (master de `HEAD`, 001 seule) : le code n-1 marche, et le code n aussi grâce à ses replis (lecture `term, aisle_slug`, upsert du rayon si la RPC manque) ;
+  - `update` vers n : 4 changesets appliqués, les 22 de 001 reconnus sans écart de checksum. Le code n-1 marche toujours ; une insertion « à l'ancienne » (`term`, `aisle_slug`) reçoit les valeurs par défaut ;
+  - `note_shopping_term` : deux ajouts donnent `times_added = 2`, une correction change le rayon sans toucher au compteur. Un autre foyer est refusé par le RLS, et `anon` n'a pas le droit d'exécuter la fonction ;
+  - `rollback` vers le tag : colonnes et fonction retirées, rayons retenus conservés, les deux versions du code marchent. Une nouvelle `update` réapplique 002 proprement.
+- **Non vérifié** : la vraie base (lecture refusée depuis la session), le Realtime entre deux téléphones, et la caméra d'un vrai iPhone ou Android.
