@@ -309,3 +309,31 @@ Les frites n'avaient pas de catégorie à elles : elles allaient dans Légumes. 
   - contrôle `grep` des commentaires Liquibase : rien.
 - Non vérifié : l'écran lui-même, que ce soit sur le téléphone ou sur le faux Supabase.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-07 — Loupe façon iOS 26 : barre d'onglets, contrôles segmentés, interrupteurs
+
+Le plan demandé, adapté à Fridge :
+1. **Contenu sous la barre** : c'était déjà le cas. Les pages à onglets défilent sous la barre `fixed`, avec la marge `.pb-tabbar` en bas. Rien à changer.
+2. **Barre plus lisible au repos, opaque sous le doigt** : flou ramené de 40 à 10 px, pour deviner ce qui passe dessous. Doigt posé, elle devient presque opaque (`bg-tabbar-pressed`).
+3. **Effet loupe** : doigt posé ou glissé, la bulle se soulève en loupe qui agrandit vraiment les icônes et les libellés situés dessous, et suit le doigt d'un onglet à l'autre. À la demande de l'utilisateur, il est étendu au contrôle segmenté (« Catégories / Tiroirs / Dates », « Apparence », tiroir de la fiche produit) et aux interrupteurs.
+
+Fichier par fichier :
+- `components/ui/useLoupe.ts` (nouveau) :
+  - la loupe part de la pastille au repos, rejoint le doigt puis le suit, image par image (lissage exponentiel, 45 ms). Elle n'utilise pas de transition CSS, qui décalerait la copie agrandie par rapport à l'original. Avec « Réduire les animations », elle saute sous le doigt ;
+  - `magnifyOrigin()` calcule l'origine du grossissement, pour que le point sous le doigt reste fixe même quand la loupe bute sur le bord.
+- `components/layout/TabBar.tsx` :
+  - la loupe (`bg-loupe`, opaque) passe au-dessus des onglets. Elle porte une copie des onglets (icône, pastille, libellé), posée exactement sur l'originale et agrandie ×1,12, soit ×1,25 avec le soulèvement ;
+  - l'onglet sous la loupe prend la couleur d'accent ;
+  - au lâcher, la bulle se pose sur l'onglet touché dès le `pointerup`. Elle ne fait plus de détour par l'ancien onglet en attendant le clic ;
+  - le contenu d'un onglet devient un composant `TabContent`, partagé par la barre et la loupe ;
+  - les mesures se font depuis le bord intérieur de la barre (bordure de 1 px exclue).
+- `components/ui/Segmented.tsx` : même loupe sur les libellés. Doigt posé n'importe où, et plus seulement sur le segment choisi, la pastille se soulève et rejoint le doigt. Au lâcher, le segment touché, ou le plus proche après un glissé, est choisi dès le `pointerup`, et le clic qui suit est avalé. Un défilement vertical qui prend le geste ne choisit toujours rien.
+- `components/ui/Switch.tsx` : la piste est unie, il n'y a rien à agrandir. Doigt posé, la pastille devient une loupe de verre clair : on voit la couleur de la piste au travers, avec un liseré lumineux (`shadow-rim`). Avant, c'était un voile blanc.
+- `app/globals.css`, `tailwind.config.ts` : `--tabbar-pressed`, `--loupe` (blanc en clair, `#48484a` en sombre), `--rim` et l'ombre `shadow-rim`. `--lens` / `bg-lens`, devenus inutiles, sont retirés.
+- Vérifié dans Chrome au format iPhone, au toucher (`page.touchscreen`), en clair et en sombre, sur une page d'essai temporaire supprimée ensuite :
+  - barre : appui sur Congélateur (loupe agrandie, barre opaque), glissé vers Courses (la loupe suit et agrandit ce qui est dessous), puis lâcher, qui ouvre Courses ;
+  - contrôle segmenté : un glissé choisit « Tiroirs », un toucher choisit « Dates » puis « Catégories » ;
+  - interrupteurs : appui (loupe claire, bleue ou grise selon la piste), et un toucher bascule chacun d'eux ;
+  - captures supprimées.
+- Non vérifié : le rendu sur un vrai iPhone (flou de Safari, fluidité du suivi).
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
