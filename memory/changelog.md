@@ -291,3 +291,21 @@ Constat : chaque changement d'onglet attendait le serveur. Les pages de l'appli 
 
 - Non vérifié : l'effet de `dub1` sur Vercel, et `getClaims()` sur la vraie base. Le faux Supabase signe en HS256, donc l'essai local est passé par le repli `getUser()`.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-07 — Catégorie « Pommes de terre »
+
+Les frites n'avaient pas de catégorie à elles : elles allaient dans Légumes. Parmi trois noms proposés (« Pommes de terre », « Frites », « Féculents »), l'utilisateur a choisi le premier.
+- `liquibase/changelog/004-categorie-pommes-de-terre.sql` + master : la catégorie `pommes-de-terre` (« Pommes de terre », 12 mois), placée juste après Légumes ; les suivantes descendent d'un rang. Au retour arrière, les produits de cette catégorie repassent dans Légumes et l'ordre d'avant revient. **Non appliquée** : à lancer par l'utilisateur.
+- `lib/categories.ts` :
+  - nouvelle entrée, avec une icône dessinée sur la grille de Lucide (`createLucideIcon`), car Lucide n'a ni frites ni pomme de terre : un cornet à bord arrondi et quatre frites. Sept dessins ont été comparés en image avant de choisir ;
+  - champ `fallback` : la catégorie où ces produits allaient avant (ici Légumes) ;
+  - devinette : frites, fries, potatoes, patates, pommes de terre, pommes noisettes, dauphines, duchesses et rissolées, rösti, wedges et hash browns vont dans « Pommes de terre ». La règle passe avant celle des fruits (« pomme ») ;
+  - l'étiquette Open Food Facts `en:cereals-and-potatoes` est ignorée, car elle chapeaute aussi le riz et les pâtes : un riz surgelé ne finit plus en « Pommes de terre » (ni en Légumes, comme avant).
+- `tailwind.config.ts` : tuile `gold` (`#9a6700`, blanc dessus à 4,9:1). On la distingue de Pain (`brown`) et de Plats maison (`orange`).
+- `components/household/HouseholdData.tsx` : `withKnownCategory()`. Si la base refuse la catégorie à l'ajout ou à la modification (`23503` sur `items_category_slug_fkey`, migration 004 pas encore passée), le produit est enregistré dans la catégorie d'avant.
+- Vérifié :
+  - migration sur PGlite (sans Liquibase) : avant 004, la base refuse le slug avec le message attendu, qui contient `category_slug`. Puis application, retour arrière (le produit repasse en Légumes) et nouvelle application, avec l'ordre attendu à chaque étape ;
+  - devinette sur 19 exemples, noms et étiquettes : frites, potatoes, rösti, purée → Pommes de terre ; compote de pommes → Fruits ; riz cantonais → Autres ; baguette → Pain ;
+  - contrôle `grep` des commentaires Liquibase : rien.
+- Non vérifié : l'écran lui-même, que ce soit sur le téléphone ou sur le faux Supabase.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
