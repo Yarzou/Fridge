@@ -51,6 +51,7 @@ const config: Config = {
         },
         tabbar: {
           DEFAULT: 'var(--tabbar)',
+          pressed: 'var(--tabbar-pressed)',
           edge: 'var(--tabbar-edge)',
         },
         bubble: {
@@ -68,7 +69,7 @@ const config: Config = {
         },
         badge: 'var(--badge)',
         knob: 'var(--knob)',
-        lens: 'var(--lens)',
+        loupe: 'var(--loupe)',
         // Tuiles d'icônes (catégories, rayons, avatars) : mêmes teintes en clair
         // et en sombre, icône ou initiale blanche dessus (≥ 4,5:1). En hex et non
         // en variables CSS pour garder les opacités (`bg-tile-green/15`).
@@ -122,6 +123,8 @@ const config: Config = {
         bubble: 'inset 0 0 0 0.5px var(--bubble-edge), 0 2px 10px rgba(0, 0, 0, 0.1)',
         // Pastille soulevée par le doigt : plus d'ombre, pour se détacher d'une piste grise
         lifted: 'inset 0 0 0 0.5px var(--bubble-edge), 0 3px 12px rgba(0, 0, 0, 0.2)',
+        // Loupe de verre clair de l'interrupteur : liseré lumineux, reflet en haut, ombre portée
+        rim: 'inset 0 0 0 1.5px var(--rim), inset 0 2px 3px var(--rim), 0 3px 12px rgba(0, 0, 0, 0.22)',
         lift: 'var(--shadow-lift)',
         float: 'var(--shadow-float)',
       },

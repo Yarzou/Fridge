@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { LIFT, MAGNIFY, magnifyOrigin, useLoupe } from '@/components/ui/useLoupe'
 import { cn } from '@/lib/utils'
 
 interface SegmentedProps<T extends string> {
@@ -22,12 +23,13 @@ const GAP = 2
 /**
  * Contrôle segmenté iOS 26 : capsule grise, segment choisi en relief. Le
  * relief est une pastille qui se déplace, comme la bulle de la barre d'onglets :
- * - au toucher d'un autre segment, elle y glisse en s'étirant comme une goutte ;
- * - doigt posé sur le segment choisi, elle se soulève en verre ;
- * - si l'on fait glisser le doigt, elle le suit, puis se pose sur le segment
- *   le plus proche, qui est choisi.
- * Le défilement vertical de la page reste libre (`touch-pan-y`). Avec
- * « Réduire les animations », la pastille se déplace sans effet.
+ * - doigt posé, elle se soulève en loupe de verre : elle rejoint le doigt, le
+ *   suit d'un segment à l'autre et agrandit les libellés qu'elle couvre ;
+ * - au lâcher, elle se pose sur le segment touché, ou sur le plus proche après
+ *   un glissé, en s'étirant comme une goutte, et ce segment est choisi.
+ * Le défilement vertical de la page reste libre (`touch-pan-y`) : s'il prend
+ * le geste, rien n'est choisi. Avec « Réduire les animations », la pastille se
+ * déplace sans effet.
  */
 export default function Segmented<T extends string>({
   options,
@@ -41,10 +43,9 @@ export default function Segmented<T extends string>({
   const rootRef = useRef<HTMLDivElement>(null)
   const gesture = useRef<{ startX: number; dragging: boolean } | null>(null)
   const swallowClick = useRef(false)
-  // Doigt posé sur le segment choisi : la pastille se soulève
-  const [pressed, setPressed] = useState(false)
-  // Pendant un glissé : abscisse du doigt et largeur du contrôle, en px
-  const [drag, setDrag] = useState<{ x: number; width: number } | null>(null)
+  const { lens, grab, follow, drop } = useLoupe()
+  // Largeur du contrôle, mesurée quand le doigt se pose
+  const [span, setSpan] = useState(0)
   // La goutte ne se déforme qu'après un premier geste, pas à l'affichage
   const [touched, setTouched] = useState(false)
 
@@ -53,60 +54,73 @@ export default function Segmented<T extends string>({
   const segmentWidth = (width: number) => (width - INSET * 2 - GAP * (count - 1)) / count
   const segmentAt = (x: number, width: number) =>
     Math.min(count - 1, Math.max(0, Math.floor((x - INSET + GAP / 2) / (segmentWidth(width) + GAP))))
-  const measure = (clientX: number) => {
-    const box = rootRef.current!.getBoundingClientRect()
-    return { x: clientX - box.left, width: box.width }
+  const localX = (clientX: number) => clientX - rootRef.current!.getBoundingClientRect().left
+
+  const choose = (next: number) => {
+    if (next !== index) onChange(options[next].value)
   }
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     gesture.current = { startX: e.clientX, dragging: false }
     swallowClick.current = false
-    const { x, width } = measure(e.clientX)
-    if (segmentAt(x, width) === index) setPressed(true)
+    setTouched(true)
+    // La loupe part de la pastille du segment choisi pour rejoindre le doigt.
+    const width = rootRef.current!.getBoundingClientRect().width
+    const x = localX(e.clientX)
+    const w = segmentWidth(width)
+    const start = index >= 0 ? index : segmentAt(x, width)
+    setSpan(width)
+    grab({ center: INSET + start * (w + GAP) + w / 2, width: w }, { center: x, width: w })
   }
 
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const g = gesture.current
     if (!g) return
-    if (!g.dragging) {
-      if (Math.abs(e.clientX - g.startX) < 8) return
+    if (!g.dragging && Math.abs(e.clientX - g.startX) >= 8) {
       g.dragging = true
-      setTouched(true)
       e.currentTarget.setPointerCapture(e.pointerId)
     }
-    setDrag(measure(e.clientX))
+    follow({ center: localX(e.clientX), width: segmentWidth(span) })
   }
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const g = gesture.current
     gesture.current = null
-    setPressed(false)
-    if (!g?.dragging) return
+    drop()
+    if (!g) return
+    if (g.dragging) {
+      swallowClick.current = true
+      choose(segmentAt(localX(e.clientX), span))
+      return
+    }
+    // Simple toucher : le segment est choisi dès le lâcher, la pastille y part
+    // sans détour ; le clic qui suit n'a plus rien à faire.
+    const segment = (e.target as Element).closest<HTMLElement>('[data-segment]')
+    if (!segment) return
     swallowClick.current = true
-    setDrag(null)
-    const { x, width } = measure(e.clientX)
-    const next = segmentAt(x, width)
-    if (next !== index) onChange(options[next].value)
+    choose(Number(segment.dataset.segment))
   }
 
   // Le navigateur a pris le geste (défilement) : rien n'est choisi
   const onPointerCancel = () => {
     gesture.current = null
-    setPressed(false)
-    setDrag(null)
+    drop()
   }
 
-  // Au repos, la pastille se place en pourcentages (aucune mesure) ; pendant un
-  // glissé, elle est centrée sous le doigt, sans sortir du contrôle.
-  let transform = `translateX(calc(${index} * (100% + ${GAP}px)))`
-  if (drag) {
-    const w = segmentWidth(drag.width)
-    const left = Math.min(Math.max(drag.x - w / 2, INSET), drag.width - INSET - w)
-    transform = `translateX(${left - INSET}px)`
+  const lifted = lens !== null && span > 0
+  const shown = lifted ? segmentAt(lens.center, span) : index
+  // Au repos, la pastille se place en pourcentages (aucune mesure) ; doigt
+  // posé, la loupe est centrée sous le doigt, sans sortir du contrôle.
+  let thumb: CSSProperties = {
+    width: `calc((100% - ${INSET * 2 + GAP * (count - 1)}px) / ${count})`,
+    transform: `translateX(calc(${index} * (100% + ${GAP}px)))`,
   }
-  const shown = drag ? segmentAt(drag.x, drag.width) : index
-  const lifted = pressed || drag !== null
+  let left = 0
+  if (lifted) {
+    left = Math.min(Math.max(lens.center - lens.width / 2, INSET), span - INSET - lens.width)
+    thumb = { width: lens.width, transform: `translateX(${left - INSET}px)` }
+  }
 
   return (
     <div
@@ -122,8 +136,8 @@ export default function Segmented<T extends string>({
         if (!gesture.current?.dragging) onPointerCancel()
       }}
       onClickCapture={e => {
-        // Fin d'un glissé : le choix est déjà fait, pas de second clic. Le
-        // clic du clavier (detail 0) n'est jamais celui d'un glissé.
+        // Choix déjà fait au lâcher : pas de second clic. Le clic du clavier
+        // (detail 0) n'est jamais celui d'un toucher.
         if (swallowClick.current && e.detail !== 0) {
           e.preventDefault()
           e.stopPropagation()
@@ -133,23 +147,57 @@ export default function Segmented<T extends string>({
       className={cn('relative grid touch-pan-y select-none gap-0.5 rounded-full bg-fill p-0.5', className)}
       style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`, ...style }}
     >
-      {(index >= 0 || drag) && (
+      {(index >= 0 || lifted) && (
         <span
           aria-hidden="true"
           className={cn(
             'pointer-events-none absolute inset-y-0.5 left-0.5',
-            !drag && 'transition-transform duration-500 ease-[cubic-bezier(0.34,1.4,0.5,1)] motion-reduce:transition-none',
+            // Loupe : au-dessus des segments, qu'elle cache et remplace par leur copie
+            // agrandie. Elle suit le doigt image par image, sans transition.
+            lifted
+              ? 'z-20'
+              : 'transition-transform duration-500 ease-[cubic-bezier(0.34,1.4,0.5,1)] motion-reduce:transition-none',
           )}
-          style={{ width: `calc((100% - ${INSET * 2 + GAP * (count - 1)}px) / ${count})`, transform }}
+          style={thumb}
         >
           <span
             key={touched ? index : 'repos'}
             className={cn(
-              'block h-full w-full rounded-full transition-[transform,background-color,box-shadow] duration-200',
-              lifted ? 'bg-lens shadow-lifted motion-safe:scale-[1.12]' : 'bg-seg shadow-lift',
+              'relative block h-full w-full overflow-hidden rounded-full transition-[transform,background-color,box-shadow] duration-200 motion-reduce:transition-none',
+              lifted ? 'bg-loupe shadow-lifted' : 'bg-seg shadow-lift',
               touched && !lifted && 'motion-safe:animate-bubble',
             )}
-          />
+            style={lifted ? { transform: `scale(${LIFT})` } : undefined}
+          >
+            {lifted && (
+              // Copie des libellés, posée exactement sur l'originale puis agrandie
+              // autour du doigt : elle grossit ce qui est dessous.
+              <span
+                className="absolute inset-y-0 grid"
+                style={{
+                  left: INSET - left,
+                  width: span - INSET * 2,
+                  gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`,
+                  columnGap: GAP,
+                  transform: `scale(${MAGNIFY})`,
+                  transformOrigin: `${magnifyOrigin(lens.center, left + lens.width / 2) - INSET}px 50%`,
+                }}
+              >
+                {options.map((option, i) => (
+                  <span
+                    key={option.value}
+                    className={cn(
+                      'flex min-w-0 items-center justify-center px-1 text-ink',
+                      i === shown && 'font-semibold',
+                      itemClassName,
+                    )}
+                  >
+                    <span className="truncate">{option.label}</span>
+                  </span>
+                ))}
+              </span>
+            )}
+          </span>
         </span>
       )}
 
@@ -160,6 +208,7 @@ export default function Segmented<T extends string>({
             key={option.value}
             type="button"
             draggable={false}
+            data-segment={i}
             aria-pressed={active}
             aria-label={option.ariaLabel}
             onClick={() => {

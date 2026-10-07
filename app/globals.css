@@ -31,6 +31,7 @@
   --glass: rgba(255, 255, 255, 0.88);
   --glass-edge: rgba(0, 0, 0, 0.06);
   --tabbar: rgba(255, 255, 255, 0.42);           /* barre d'onglets : verre très transparent */
+  --tabbar-pressed: rgba(255, 255, 255, 0.94);   /* la même, doigt posé dessus : presque opaque */
   --tabbar-edge: rgba(255, 255, 255, 0.65);
   --tabbar-highlight: rgba(255, 255, 255, 0.8);  /* reflet sur l'arête haute */
   --bubble: rgba(120, 120, 128, 0.16);           /* bulle de l'onglet choisi : gris système translucide */
@@ -47,7 +48,8 @@
   --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
   --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
   --knob: #ffffff;          /* pastille d'un interrupteur, blanche dans les deux modes */
-  --lens: rgba(255, 255, 255, 0.6);  /* pastille soulevée par le doigt (segment, interrupteur) : verre clair */
+  --loupe: #ffffff;         /* loupe (barre d'onglets, contrôle segmenté) : opaque, elle cache ce qu'elle agrandit */
+  --rim: rgba(255, 255, 255, 0.9);  /* liseré de la loupe de verre clair (interrupteur) */
 }
 
 html.dark {
@@ -71,6 +73,7 @@ html.dark {
   --glass: rgba(36, 36, 38, 0.88);
   --glass-edge: rgba(255, 255, 255, 0.08);
   --tabbar: rgba(44, 44, 46, 0.42);
+  --tabbar-pressed: rgba(36, 36, 38, 0.94);
   --tabbar-edge: rgba(255, 255, 255, 0.12);
   --tabbar-highlight: rgba(255, 255, 255, 0.14);
   --bubble: rgba(255, 255, 255, 0.16);
@@ -87,7 +90,8 @@ html.dark {
   --badge: #c2410c;
   --tile-ink: #48484a;
   --knob: #ffffff;
-  --lens: rgba(255, 255, 255, 0.2);
+  --loupe: #48484a;
+  --rim: rgba(255, 255, 255, 0.4);
 }
 
 html,
