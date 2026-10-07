@@ -8,12 +8,22 @@ import {
   Leaf,
   Package,
   Soup,
+  createLucideIcon,
   type LucideIcon,
 } from 'lucide-react'
 
+/** Lucide n'a ni frites ni pomme de terre : cornet de frites dessiné sur sa grille (24 px, trait 2). */
+const Fries = createLucideIcon('fries', [
+  ['path', { d: 'M4 9c2.5 0 4 2.5 8 2.5S17.5 9 20 9l-2 11.1a1 1 0 0 1-1 .9H7a1 1 0 0 1-1-.9Z', key: 'cornet' }],
+  ['path', { d: 'M7.5 9.5 7 4', key: 'frite-1' }],
+  ['path', { d: 'M10.5 11V3', key: 'frite-2' }],
+  ['path', { d: 'M13.5 11 14 4', key: 'frite-3' }],
+  ['path', { d: 'm16.5 9.5.5-4', key: 'frite-4' }],
+])
+
 /**
  * Catégories du congélateur. Slugs, libellés, durées et ordre recopient la
- * table `categories` (migration 001) ; l'icône et la couleur ne vivent qu'ici.
+ * table `categories` (migrations 001 et 004) ; l'icône et la couleur ne vivent qu'ici.
  *
  * `tile` : tuile pleine, icône blanche. `soft` : tuile claire, icône colorée
  * (grande vignette d'un produit sans photo).
@@ -26,12 +36,18 @@ export interface Category {
   icon: LucideIcon
   tile: string
   soft: string
+  /**
+   * Catégorie ajoutée par une migration : celle où ces produits allaient avant.
+   * Tant que la base ne connaît pas la nouvelle, le produit y est rangé.
+   */
+  fallback?: string
 }
 
 export const CATEGORIES: Category[] = [
   { slug: 'viandes', label: 'Viandes', months: 6, icon: Drumstick, tile: 'bg-tile-red', soft: 'bg-tile-red/15 text-tile-red' },
   { slug: 'poissons', label: 'Poissons', months: 4, icon: Fish, tile: 'bg-tile-blue', soft: 'bg-tile-blue/15 text-tile-blue' },
   { slug: 'legumes', label: 'Légumes', months: 10, icon: Carrot, tile: 'bg-tile-green', soft: 'bg-tile-green/15 text-tile-green' },
+  { slug: 'pommes-de-terre', label: 'Pommes de terre', months: 12, icon: Fries, tile: 'bg-tile-gold', soft: 'bg-tile-gold/15 text-tile-gold', fallback: 'legumes' },
   { slug: 'fruits', label: 'Fruits', months: 10, icon: Cherry, tile: 'bg-tile-pink', soft: 'bg-tile-pink/15 text-tile-pink' },
   { slug: 'plats-maison', label: 'Plats maison', months: 3, icon: Soup, tile: 'bg-tile-orange', soft: 'bg-tile-orange/15 text-tile-orange' },
   { slug: 'pain', label: 'Pain', months: 3, icon: Croissant, tile: 'bg-tile-brown', soft: 'bg-tile-brown/15 text-tile-brown' },
@@ -52,11 +68,16 @@ const GUESS_RULES: [RegExp, string][] = [
   [/fish|seafood|poisson|cabillaud|saumon|colin|merlu|crevette|thon|moule|calamar|surimi/, 'poissons'],
   [/meat|poultr|sausage|viande|volaille|poulet|b[œoe]uf|porc|veau|agneau|dinde|steak|hach[ée]|saucisse|lardon|canard|jambon/, 'viandes'],
   [/herb|aromat|persil|basilic|ciboulette|coriandre|menthe|aneth|estragon/, 'herbes'],
-  [/vegetable|\bpeas?\b|l[ée]gume|petits? pois|haricot|[ée]pinard|brocoli|chou|carotte|poivron|courgette|frite|potato|pommes?[- ]de[- ]terre|po[êe]l[ée]e|ratatouille/, 'legumes'],
+  // Avant les légumes, et surtout avant les fruits (« pomme »).
+  [/fries|frite|potato|patate|pommes?[- ]de[- ]terre|pommes?[- ](noisettes?|dauphines?|duchesses?|rissol[ée]es?)|\br[öo]sti|wedges|hash[- ]browns?/, 'pommes-de-terre'],
+  [/vegetable|\bpeas?\b|l[ée]gume|petits? pois|haricot|[ée]pinard|brocoli|chou|carotte|poivron|courgette|po[êe]l[ée]e|ratatouille/, 'legumes'],
   [/fruit|berr|framboise|fraise|myrtille|mangue|cerise|ananas|m[ûu]re|cassis|banane|pomme/, 'fruits'],
   [/bread|pain|viennoiser|croissant|baguette|brioche|pastr/, 'pain'],
   [/meal|plat|pizza|lasagne|gratin|quiche|soupe|soup|tarte|hachis|nugget|cordon|burger/, 'plats-maison'],
 ]
+
+/** « en:cereals-and-potatoes » chapeaute aussi le riz et les pâtes : on ne s'y fie pas. */
+const TOO_BROAD = /cereals-and-potatoes/
 
 function matchCategory(text: string): string | null {
   for (const [re, slug] of GUESS_RULES) if (re.test(text)) return slug
@@ -72,7 +93,9 @@ function matchCategory(text: string): string | null {
  */
 export function guessCategory(tags: string[], name: string): string {
   for (let i = tags.length - 1; i >= 0; i--) {
-    const slug = matchCategory(tags[i].toLowerCase())
+    const tag = tags[i].toLowerCase()
+    if (TOO_BROAD.test(tag)) continue
+    const slug = matchCategory(tag)
     if (slug) return slug
   }
   return matchCategory(name.toLowerCase()) ?? 'autres'

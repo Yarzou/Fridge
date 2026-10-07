@@ -17,4 +17,7 @@
        réglages par personne (reminder_settings), RPC save_push_subscription -->
   <include file="liquibase/changelog/003-rappels.sql"/>
 
+  <!-- Catégorie « Pommes de terre » (frites, potatoes, rösti…), juste après Légumes -->
+  <include file="liquibase/changelog/004-categorie-pommes-de-terre.sql"/>
+
 </databaseChangeLog>

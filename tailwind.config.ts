@@ -82,6 +82,7 @@ const config: Config = {
           orange: '#c46a12',
           brown: '#a65a0e',
           amber: '#b45309',
+          gold: '#9a6700',
           ice: '#2f8fb8',
           dairy: '#3a6ea5',
           teal: '#0f766e',

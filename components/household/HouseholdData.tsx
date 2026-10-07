@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { PostgrestError, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { getCategory } from '@/lib/categories'
 import { normalizeTerm } from '@/lib/aisles'
@@ -115,6 +115,20 @@ function upsert<T extends { id: string }>(list: T[], row: T): T[] {
 function countFromNote(note: string | null): number {
   const match = note?.match(/^×(\d+)$/)
   return match ? Math.min(Number(match[1]), 99) : 1
+}
+
+/**
+ * Écrit un produit. Si la base ne connaît pas encore sa catégorie (migration
+ * pas encore passée sur ce projet), réessaie dans celle d'avant (`fallback`).
+ */
+async function withKnownCategory<R extends { category_slug?: string }, T>(
+  row: R,
+  write: (row: R) => PromiseLike<{ data: T | null; error: PostgrestError | null }>,
+) {
+  const result = await write(row)
+  const fallback = row.category_slug ? getCategory(row.category_slug).fallback : undefined
+  const unknown = result.error?.code === '23503' && result.error.message.includes('category_slug')
+  return fallback && unknown ? write({ ...row, category_slug: fallback }) : result
 }
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
@@ -283,7 +297,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   }
 
   const insertItemRow = async (row: Partial<Item>): Promise<Item | null> => {
-    const { data, error } = await supabase.from('items').insert(row).select(ITEM_COLUMNS).single()
+    const { data, error } = await withKnownCategory(row, r => supabase.from('items').insert(r).select(ITEM_COLUMNS).single())
     if (error || !data) {
       console.error('[foyer] ajout', error?.code, error?.message)
       showError()
@@ -343,7 +357,9 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const updateItem = async (id: string, patch: Partial<ItemInput>): Promise<boolean> => {
     const before = items.find(i => i.id === id)
     patchItem(id, patch)
-    const { data, error } = await supabase.from('items').update(patch).eq('id', id).select(ITEM_COLUMNS).single()
+    const { data, error } = await withKnownCategory(patch, p =>
+      supabase.from('items').update(p).eq('id', id).select(ITEM_COLUMNS).single(),
+    )
     if (error || !data) {
       console.error('[foyer] modification', error?.code, error?.message)
       if (before) setItems(prev => upsert(prev, before))
