@@ -337,3 +337,36 @@ Fichier par fichier :
   - captures supprimées.
 - Non vérifié : le rendu sur un vrai iPhone (flou de Safari, fluidité du suivi).
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-08 — Verre « Liquid Glass » partout où Apple le met
+
+Audit demandé : le verre était-il bien là où il doit l'être ? Comparaison du code avec le guide d'Apple (« Adopting Liquid Glass », developer.apple.com). Déjà conformes : la barre d'onglets, le contrôle segmenté et les interrupteurs (la pastille devient du verre pendant le geste), les boutons du scanner sur la caméra, le contenu sans verre, la feuille plein écran opaque. Manquaient les menus, le toast, les feuilles partielles et les boutons du haut ; l'encart « Ranger » avait une autre recette. L'utilisateur a demandé les trois lots de corrections.
+
+- `components/ui/glass.ts` (nouveau) : `GLASS`, la seule recette de verre (liseré clair, reflet sur l'arête haute, flou 24 px, saturation, verre épais à 88 % pour rester lisible), et `glassButton('round' | 'capsule')`, le bouton du haut d'écran (44 px).
+- `app/globals.css`, `tailwind.config.ts` :
+  - famille de tokens `glass`, `glass-thin`, `glass-pressed`, `glass-rim`, `--glass-highlight`. Ils remplacent `tabbar`, `tabbar-pressed`, `tabbar-edge`, `--tabbar-highlight` et `glass-edge` ;
+  - `toast` et `toast-action` sont retirés ; `card-raised` est ajouté (carte posée sur une feuille de verre, #2c2c2e en sombre) ;
+  - **correctif** : l'ombre `shadow-glass` portait le nom de la couleur `glass`. Tailwind remplaçait donc la couleur du reflet par celle du verre, et le reflet de la barre d'onglets était invisible en sombre. Elle devient `shadow-sheen` ;
+  - animation `menu` (le menu sort du bouton) et utilitaire `.pb-sheet` (bas d'une feuille décollée de 8 px).
+- `components/layout/TabBar.tsx` : nouveaux tokens, rendu identique, sauf le reflet, enfin visible en sombre. Le bouton Scanner reste bleu, avec le reflet du verre.
+- `components/ui/UndoToast.tsx` : le toast « Annuler » passe du gris foncé au verre, en capsule, comme l'encart qui prend la même place. « Annuler » devient une capsule `bg-accent-soft`.
+- `app/(app)/(onglets)/courses/CoursesClient.tsx` :
+  - boutons « Partager » et « … » en verre ;
+  - menu en verre, qui sort du bouton ;
+  - encart « Ranger » en capsule de verre ;
+  - feuille « Modifier l'article » en verre, décollée de 8 px des bords, coins de 38 px, carte `bg-card-raised`.
+- `app/(app)/(onglets)/congelateur/CongelateurClient.tsx` : choix du congélateur et « + » en verre. Le choix du congélateur passe de 36 à 44 px de haut, la cible tactile minimale. Le menu est en verre et sort du bouton.
+- `app/(app)/(onglets)/tiroir/[id]/TiroirClient.tsx` : « ‹ Congélateur » devient un chevron dans un rond de verre (« Retour au congélateur »), et « Modifier » une capsule de verre. « OK » devient une coche sur fond bleu (« Enregistrer le nom »).
+- `app/(app)/etiquettes/EtiquettesClient.tsx` : retour au foyer en rond de verre.
+- `components/inventory/ItemSheet.tsx`, `components/layout/Sheet.tsx` : « Annuler » devient une croix dans un rond de verre. La feuille plein écran reste opaque, comme sur iOS 26.
+- `app/(app)/scanner/ScannerClient.tsx` : le panneau du bas devient une feuille de verre, décollée des bords, sur l'image de la caméra.
+- `components/layout/PWAInstallBanner.tsx` : en verre, elle aussi flottante.
+- Vérifié dans Chrome au format iPhone (390 × 844), au toucher, contre le faux Supabase local, en clair et en sombre :
+  - Congélateur et son menu ;
+  - Tiroir, puis « − » et le toast ;
+  - Courses : encart, menu et feuille de correction ;
+  - Ajouter, Étiquettes et Scanner (caméra simulée).
+
+  Captures supprimées.
+- Non vérifié : le rendu sur un vrai iPhone (flou de Safari).
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
