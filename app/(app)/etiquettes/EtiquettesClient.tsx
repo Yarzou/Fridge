@@ -7,6 +7,7 @@ import { APP_NAME } from '@/lib/app'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import QrCodeSvg from '@/components/inventory/QrCodeSvg'
 import { buttonClass } from '@/components/ui/Button'
+import { glassButton } from '@/components/ui/glass'
 import StatusBarShield from '@/components/layout/StatusBarShield'
 
 const noop = () => () => {}
@@ -29,9 +30,8 @@ export default function EtiquettesClient() {
       <StatusBarShield />
       <header className="flex flex-col print:hidden">
         <div className="flex h-11 items-center">
-          <Link href="/foyer" className="-ml-1.5 flex h-11 items-center gap-0.5 text-body text-accent">
+          <Link href="/foyer" aria-label="Retour au foyer" className={glassButton('round', 'text-accent')}>
             <ChevronLeft size={24} strokeWidth={2.4} aria-hidden="true" />
-            Foyer
           </Link>
         </div>
         <h1 className="mt-1.5 text-large-title">Étiquettes des tiroirs</h1>

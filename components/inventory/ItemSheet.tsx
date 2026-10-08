@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, LoaderCircle, Minus, Plus, ScanLine, Trash } from 'lucide-react'
+import { Check, ChevronDown, LoaderCircle, Minus, Plus, ScanLine, Trash, X } from 'lucide-react'
 import { CATEGORIES, getCategory, guessCategory } from '@/lib/categories'
 import { addMonths, formatMonthYear, formatShortDate, daysBetween } from '@/lib/dates'
 import { UNITS, quantityLabel } from '@/lib/units'
@@ -16,6 +16,7 @@ import Sheet from '@/components/layout/Sheet'
 import Segmented from '@/components/ui/Segmented'
 import Notice from '@/components/ui/Notice'
 import { buttonClass } from '@/components/ui/Button'
+import { glassButton } from '@/components/ui/glass'
 
 /** Ce que le scanner (ou un lien) sait déjà du produit à ranger. */
 export interface ItemPrefill {
@@ -48,8 +49,8 @@ export default function ItemSheet(props: ItemSheetProps) {
     else router.replace(props.returnTo)
   }
   const cancel = (
-    <button type="button" onClick={close} className="h-11 text-body text-accent">
-      Annuler
+    <button type="button" onClick={close} aria-label="Annuler" className={glassButton('round', 'text-accent')}>
+      <X size={22} strokeWidth={2.4} aria-hidden="true" />
     </button>
   )
 

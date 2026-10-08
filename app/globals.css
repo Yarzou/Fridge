@@ -14,6 +14,7 @@
   color-scheme: light;
   --canvas: #f2f2f7;        /* fond de page */
   --card: #ffffff;          /* cartes, listes groupées */
+  --card-raised: #ffffff;   /* carte posée sur une feuille de verre (fond « surélevé » d'iOS en sombre) */
   --fill: #e4e4e9;          /* champ de recherche, contrôle segmenté */
   --fill-soft: #e9e9ee;     /* stepper, pastilles de date */
   --ink: #1c1c1e;
@@ -28,12 +29,12 @@
   --danger: #b42318;        /* texte destructif */
   --danger-fill: #b42318;   /* pastille « Dépassé », pleine */
   --danger-soft: #fde4e2;
-  --glass: rgba(255, 255, 255, 0.88);
-  --glass-edge: rgba(0, 0, 0, 0.06);
-  --tabbar: rgba(255, 255, 255, 0.42);           /* barre d'onglets : verre très transparent */
-  --tabbar-pressed: rgba(255, 255, 255, 0.94);   /* la même, doigt posé dessus : presque opaque */
-  --tabbar-edge: rgba(255, 255, 255, 0.65);
-  --tabbar-highlight: rgba(255, 255, 255, 0.8);  /* reflet sur l'arête haute */
+  /* Verre « Liquid Glass » (components/ui/glass.ts) : une seule matière pour ce qui flotte au-dessus du contenu */
+  --glass: rgba(255, 255, 255, 0.88);            /* verre épais : il porte du texte (menus, toast, feuilles, boutons) */
+  --glass-thin: rgba(255, 255, 255, 0.42);       /* verre léger : barre d'onglets au repos */
+  --glass-pressed: rgba(255, 255, 255, 0.94);    /* barre d'onglets, doigt posé dessus : presque opaque */
+  --glass-rim: rgba(255, 255, 255, 0.65);        /* liseré clair */
+  --glass-highlight: rgba(255, 255, 255, 0.8);   /* reflet sur l'arête haute (shadow-sheen) */
   --bubble: rgba(120, 120, 128, 0.16);           /* bulle de l'onglet choisi : gris système translucide */
   --bubble-edge: rgba(255, 255, 255, 0.75);      /* liseré lumineux de la bulle */
   --shadow-lift: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -43,8 +44,6 @@
   --grabber: #c7c7cc;       /* poignée des feuilles */
   --accent-wash: #eef4fd;   /* ligne qu'on vient de toucher, encart « plus rien en stock » */
   --swipe: #636366;         /* action grise d'une ligne glissée (« Tout sortir ») */
-  --toast: #1c1c1e;         /* toast « Annuler », texte blanc */
-  --toast-action: #9cc3ff;  /* bouton « Annuler » du toast : 8,6:1 sur --toast */
   --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
   --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
   --knob: #ffffff;          /* pastille d'un interrupteur, blanche dans les deux modes */
@@ -56,6 +55,7 @@ html.dark {
   color-scheme: dark;
   --canvas: #000000;
   --card: #1c1c1e;
+  --card-raised: #2c2c2e;
   --fill: #2c2c2e;
   --fill-soft: #2c2c2e;
   --ink: #f2f2f7;
@@ -71,11 +71,10 @@ html.dark {
   --danger-fill: #c0392b;
   --danger-soft: #3b1512;
   --glass: rgba(36, 36, 38, 0.88);
-  --glass-edge: rgba(255, 255, 255, 0.08);
-  --tabbar: rgba(44, 44, 46, 0.42);
-  --tabbar-pressed: rgba(36, 36, 38, 0.94);
-  --tabbar-edge: rgba(255, 255, 255, 0.12);
-  --tabbar-highlight: rgba(255, 255, 255, 0.14);
+  --glass-thin: rgba(44, 44, 46, 0.42);
+  --glass-pressed: rgba(36, 36, 38, 0.94);
+  --glass-rim: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.14);
   --bubble: rgba(255, 255, 255, 0.16);
   --bubble-edge: rgba(255, 255, 255, 0.24);
   --shadow-lift: none;
@@ -85,8 +84,6 @@ html.dark {
   --grabber: #48484a;
   --accent-wash: #13233d;
   --swipe: #48484a;
-  --toast: #3a3a3c;
-  --toast-action: #9cc3ff;
   --badge: #c2410c;
   --tile-ink: #48484a;
   --knob: #ffffff;
@@ -137,6 +134,11 @@ textarea::placeholder {
   /* Toast « Annuler » et encart flottant : juste au-dessus de la barre d'onglets */
   .bottom-toast {
     bottom: calc(max(calc(env(safe-area-inset-bottom) - 14px), 10px) + 80px);
+  }
+  /* Feuille partielle en verre, décollée de 8 px des bords comme sur iOS 26 :
+     son contenu reste au-dessus de la barre d'accueil */
+  .pb-sheet {
+    padding-bottom: calc(max(calc(env(safe-area-inset-bottom) - 8px), 0px) + 16px);
   }
   /* Courses : la liste laisse aussi la place à l'encart « surgelés dans le panier » */
   .pb-tabbar-card {

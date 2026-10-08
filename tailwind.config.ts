@@ -19,7 +19,10 @@ const config: Config = {
     extend: {
       colors: {
         canvas: 'var(--canvas)',
-        card: 'var(--card)',
+        card: {
+          DEFAULT: 'var(--card)',
+          raised: 'var(--card-raised)',
+        },
         fill: {
           DEFAULT: 'var(--fill)',
           soft: 'var(--fill-soft)',
@@ -45,14 +48,12 @@ const config: Config = {
           fill: 'var(--danger-fill)',
           soft: 'var(--danger-soft)',
         },
+        // Verre « Liquid Glass » : voir components/ui/glass.ts
         glass: {
           DEFAULT: 'var(--glass)',
-          edge: 'var(--glass-edge)',
-        },
-        tabbar: {
-          DEFAULT: 'var(--tabbar)',
-          pressed: 'var(--tabbar-pressed)',
-          edge: 'var(--tabbar-edge)',
+          thin: 'var(--glass-thin)',
+          pressed: 'var(--glass-pressed)',
+          rim: 'var(--glass-rim)',
         },
         bubble: {
           DEFAULT: 'var(--bubble)',
@@ -63,10 +64,6 @@ const config: Config = {
         grabber: 'var(--grabber)',
         'accent-wash': 'var(--accent-wash)',
         swipe: 'var(--swipe)',
-        toast: {
-          DEFAULT: 'var(--toast)',
-          action: 'var(--toast-action)',
-        },
         badge: 'var(--badge)',
         knob: 'var(--knob)',
         loupe: 'var(--loupe)',
@@ -114,12 +111,21 @@ const config: Config = {
           '62%': { transform: 'scale(0.95, 1.06)' },
           '100%': { transform: 'scale(1, 1)' },
         },
+        // Menu qui sort du bouton qui l'ouvre (origine posée sur le bouton : origin-top-left…)
+        menu: {
+          '0%': { opacity: '0', transform: 'scale(0.4)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         bubble: 'bubble 560ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+        menu: 'menu 320ms cubic-bezier(0.34, 1.3, 0.5, 1)',
       },
       boxShadow: {
-        glass: 'var(--shadow-float), inset 0 1px 0 var(--tabbar-highlight)',
+        // Verre : ombre portée et reflet sur l'arête haute. Pas « shadow-glass » :
+        // la couleur `glass` générerait aussi la couleur d'ombre `shadow-glass`,
+        // qui remplaçait le reflet par le fond du verre (invisible en sombre).
+        sheen: 'var(--shadow-float), inset 0 1px 0 var(--glass-highlight)',
         bubble: 'inset 0 0 0 0.5px var(--bubble-edge), 0 2px 10px rgba(0, 0, 0, 0.1)',
         // Pastille soulevée par le doigt : plus d'ombre, pour se détacher d'une piste grise
         lifted: 'inset 0 0 0 0.5px var(--bubble-edge), 0 3px 12px rgba(0, 0, 0, 0.2)',

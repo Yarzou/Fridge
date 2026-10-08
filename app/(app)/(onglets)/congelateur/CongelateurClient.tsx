@@ -28,6 +28,7 @@ import Segmented from '@/components/ui/Segmented'
 import SwipeRow from '@/components/ui/SwipeRow'
 import Notice from '@/components/ui/Notice'
 import { buttonClass } from '@/components/ui/Button'
+import { GLASS, glassButton } from '@/components/ui/glass'
 import PushPrompt from '@/components/push/PushPrompt'
 
 type View = 'categories' | 'tiroirs' | 'dates'
@@ -137,7 +138,7 @@ export default function CongelateurClient() {
             onClick={() => setMenuOpen(o => !o)}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            className="flex h-9 max-w-[70%] items-center gap-1 rounded-full bg-card px-3 text-subhead font-semibold shadow-lift"
+            className={glassButton('capsule', 'max-w-[70%] gap-1')}
           >
             <span className="truncate">{freezer?.name ?? 'Congélateur'}</span>
             <ChevronDown size={14} strokeWidth={2.6} className="shrink-0" aria-hidden="true" />
@@ -146,7 +147,7 @@ export default function CongelateurClient() {
             href={addHref}
             prefetch
             aria-label="Ajouter un produit"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-accent shadow-lift"
+            className={glassButton('round', 'text-accent')}
           >
             <Plus size={22} strokeWidth={2.4} aria-hidden="true" />
           </Link>
@@ -159,7 +160,14 @@ export default function CongelateurClient() {
                 className="fixed inset-0 z-20 cursor-default"
                 onClick={() => setMenuOpen(false)}
               />
-              <div role="menu" className="absolute left-0 top-11 z-30 w-64 overflow-hidden rounded-xl bg-card shadow-float">
+              {/* Menu en verre, qui sort du bouton */}
+              <div
+                role="menu"
+                className={cn(
+                  'absolute left-0 top-12 z-30 w-64 origin-top-left overflow-hidden rounded-[22px] motion-safe:animate-menu',
+                  GLASS,
+                )}
+              >
                 {data.freezers.map(f => (
                   <button
                     key={f.id}

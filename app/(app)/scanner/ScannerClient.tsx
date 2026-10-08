@@ -14,6 +14,7 @@ import type { Item } from '@/lib/types'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import { CategoryTile } from '@/components/inventory/CategoryTile'
 import { buttonClass } from '@/components/ui/Button'
+import { GLASS } from '@/components/ui/glass'
 
 type Camera = 'starting' | 'running' | 'denied' | 'unavailable'
 
@@ -299,7 +300,13 @@ export default function ScannerClient() {
         </div>
       )}
 
-      <div className="pb-safe absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-md flex-col gap-4 rounded-t-[28px] bg-card px-5 pt-2 text-ink">
+      {/* Feuille partielle d'iOS 26 : en verre sur l'image de la caméra, décollée de 8 px des bords */}
+      <div
+        className={cn(
+          'pb-sheet absolute inset-x-2 bottom-2 z-10 mx-auto flex max-w-md flex-col gap-4 rounded-[38px] px-5 pt-2 text-ink',
+          GLASS,
+        )}
+      >
         <div className="mx-auto h-[5px] w-9 rounded-full bg-grabber" aria-hidden="true" />
 
         <div role="status" aria-live="polite" className="flex flex-col gap-4">

@@ -9,6 +9,7 @@ import type { ShoppingItem } from '@/lib/types'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import Notice from '@/components/ui/Notice'
 import { buttonClass } from '@/components/ui/Button'
+import { GLASS, glassButton } from '@/components/ui/glass'
 
 /**
  * Onglet Courses (maquette « Courses ») : une liste partagée par le foyer,
@@ -65,10 +66,7 @@ export default function CoursesClient() {
     <div className={cn('flex flex-col', forFreezer.length > 0 && 'pb-20')}>
       <header className="flex flex-col">
         <div className="relative flex h-11 items-center justify-between">
-          <Link
-            href="/foyer"
-            className="flex h-9 items-center gap-1.5 rounded-full bg-card px-3 text-subhead font-semibold shadow-lift"
-          >
+          <Link href="/foyer" className={glassButton('capsule')}>
             <Users size={18} aria-hidden="true" />
             {members > 1 ? `Partagée · ${members}` : 'Partager'}
           </Link>
@@ -78,7 +76,7 @@ export default function CoursesClient() {
             aria-label="Options de la liste"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-accent shadow-lift"
+            className={glassButton('round', 'text-accent')}
           >
             <Ellipsis size={22} aria-hidden="true" />
           </button>
@@ -90,7 +88,14 @@ export default function CoursesClient() {
                 className="fixed inset-0 z-20 cursor-default"
                 onClick={() => setMenuOpen(false)}
               />
-              <div role="menu" className="absolute right-0 top-12 z-30 w-72 overflow-hidden rounded-xl bg-card shadow-float">
+              {/* Menu en verre, qui sort du bouton */}
+              <div
+                role="menu"
+                className={cn(
+                  'absolute right-0 top-12 z-30 w-72 origin-top-right overflow-hidden rounded-[22px] motion-safe:animate-menu',
+                  GLASS,
+                )}
+              >
                 <button
                   type="button"
                   role="menuitem"
@@ -250,7 +255,8 @@ export default function CoursesClient() {
 
       {forFreezer.length > 0 && !data.toast && (
         <div className="bottom-toast fixed inset-x-0 z-30 flex justify-center px-4">
-          <div className="flex w-full max-w-md items-center gap-3 rounded-[18px] border border-glass-edge bg-glass py-3 pl-3.5 pr-3 shadow-float backdrop-blur-xl">
+          {/* Verre, comme l'accessoire posé au-dessus d'une barre d'onglets iOS 26 */}
+          <div className={cn('flex w-full max-w-md items-center gap-3 rounded-[34px] py-3 pl-3.5 pr-3', GLASS)}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-tile-ice text-white">
               <Snowflake size={20} aria-hidden="true" />
             </span>
@@ -291,7 +297,8 @@ function EditItemSheet({ item, onClose }: { item: ShoppingItem; onClose: () => v
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+    // Feuille partielle d'iOS 26 : en verre, décollée de 8 px des bords de l'écran
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -300,7 +307,7 @@ function EditItemSheet({ item, onClose }: { item: ShoppingItem; onClose: () => v
         onKeyDown={e => {
           if (e.key === 'Escape') onClose()
         }}
-        className="pb-safe flex w-full max-w-md flex-col gap-4 rounded-t-[28px] bg-canvas px-4 pt-2"
+        className={cn('pb-sheet flex w-full max-w-md flex-col gap-4 rounded-[38px] px-4 pt-2', GLASS)}
       >
         <div className="mx-auto h-[5px] w-9 rounded-full bg-grabber" aria-hidden="true" />
         <form
@@ -310,7 +317,7 @@ function EditItemSheet({ item, onClose }: { item: ShoppingItem; onClose: () => v
           }}
           className="flex flex-col gap-4"
         >
-          <div className="overflow-hidden rounded-xl bg-card">
+          <div className="overflow-hidden rounded-xl bg-card-raised">
             <label className="flex min-h-[52px] items-center gap-3 px-4">
               <span className="w-[88px] shrink-0 text-body">Article</span>
               <input

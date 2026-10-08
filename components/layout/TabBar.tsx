@@ -236,8 +236,9 @@ export default function TabBar() {
             }
           }}
           className={cn(
-            'relative grid h-[62px] flex-1 touch-none select-none grid-cols-3 rounded-full border border-tabbar-edge p-1 shadow-glass backdrop-blur-[10px] backdrop-saturate-[1.8] transition-colors duration-200',
-            lifted ? 'bg-tabbar-pressed' : 'bg-tabbar',
+            // Verre léger et peu flouté (components/ui/glass.ts), même arête que le reste du verre
+            'relative grid h-[62px] flex-1 touch-none select-none grid-cols-3 rounded-full border border-glass-rim p-1 shadow-sheen backdrop-blur-[10px] backdrop-saturate-[1.8] transition-colors duration-200',
+            lifted ? 'bg-glass-pressed' : 'bg-glass-thin',
           )}
         >
           {bubble && (
@@ -315,11 +316,12 @@ export default function TabBar() {
             </Link>
           ))}
         </div>
+        {/* Verre teinté (« prominent glass ») : la couleur d'accent, avec le reflet du verre */}
         <Link
           href="/scanner"
           prefetch
           aria-label="Scanner"
-          className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-accent-fill text-white shadow-float"
+          className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-accent-fill text-white shadow-sheen"
         >
           <ScanLine size={26} strokeWidth={2.2} aria-hidden="true" />
         </Link>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, CircleCheck, CirclePlus, LoaderCircle, Minus, QrCode, ShoppingCart } from 'lucide-react'
+import { Check, ChevronLeft, CircleCheck, CirclePlus, LoaderCircle, Minus, QrCode, ShoppingCart } from 'lucide-react'
 import { aisleForFreezerItem } from '@/lib/aisles'
 import { dueOf, frozenLabel } from '@/lib/dates'
 import { useToday } from '@/lib/useToday'
@@ -12,6 +12,7 @@ import { useHouseholdData } from '@/components/household/HouseholdData'
 import { CategoryTile, DueBadge } from '@/components/inventory/CategoryTile'
 import PageHeader from '@/components/ui/PageHeader'
 import Notice from '@/components/ui/Notice'
+import { glassButton } from '@/components/ui/glass'
 
 /**
  * Un tiroir, ouvert depuis l'onglet Congélateur ou par son QR code (maquette
@@ -30,9 +31,8 @@ export default function TiroirClient({ id, fromQr }: { id: string; fromQr: boole
   const drawer = freezer?.compartments.find(c => c.id === id)
 
   const back = (
-    <Link href="/congelateur" className="-ml-1.5 flex h-11 items-center gap-0.5 text-body text-accent">
+    <Link href="/congelateur" aria-label="Retour au congélateur" className={glassButton('round', 'text-accent')}>
       <ChevronLeft size={24} strokeWidth={2.4} aria-hidden="true" />
-      Congélateur
     </Link>
   )
 
@@ -93,8 +93,14 @@ export default function TiroirClient({ id, fromQr }: { id: string; fromQr: boole
         <div className="flex h-11 items-center justify-between gap-3">
           {back}
           {renaming ? (
-            <button type="button" onClick={saveName} className="h-11 text-body font-semibold text-accent">
-              OK
+            // Validation en verre teinté, comme le bouton « OK » d'une barre iOS 26
+            <button
+              type="button"
+              onClick={saveName}
+              aria-label="Enregistrer le nom"
+              className={glassButton('round', 'bg-accent-fill text-white')}
+            >
+              <Check size={22} strokeWidth={2.6} aria-hidden="true" />
             </button>
           ) : (
             <button
@@ -103,7 +109,7 @@ export default function TiroirClient({ id, fromQr }: { id: string; fromQr: boole
                 setDraft(drawer.name)
                 setRenaming(true)
               }}
-              className="h-11 text-body text-accent"
+              className={glassButton('capsule', 'text-accent')}
             >
               Modifier
             </button>

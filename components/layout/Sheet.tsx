@@ -2,11 +2,13 @@ import type { ReactNode } from 'react'
 
 /**
  * Feuille plein écran (ajouter, modifier un produit) : barre de titre avec
- * « Annuler », contenu qui défile et pied fixe pour les boutons.
+ * le bouton « Annuler » (croix dans un rond de verre), contenu qui défile et
+ * pied fixe pour les boutons.
  *
  * Pas d'imitation de la carte iOS qui dépasse derrière (bande grise en haut,
  * poignée) : sur un vrai écran, elle passait pour un double fond. La feuille
- * prend tout l'écran, sur le fond de page, encoche comprise.
+ * prend tout l'écran, sur le fond de page, encoche comprise. Elle reste opaque :
+ * sur iOS 26, une feuille ouverte sur toute la hauteur n'est plus en verre.
  */
 export default function Sheet({
   title,
@@ -15,7 +17,7 @@ export default function Sheet({
   children,
 }: {
   title: string
-  /** Bouton ou lien « Annuler », à gauche du titre. */
+  /** Bouton « Annuler », à gauche du titre (glassButton('round')). */
   cancel: ReactNode
   footer?: ReactNode
   children: ReactNode

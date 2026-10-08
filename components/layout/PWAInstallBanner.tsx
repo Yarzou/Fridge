@@ -3,6 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Download, Share, X } from 'lucide-react'
 import { APP_NAME } from '@/lib/app'
+import { cn } from '@/lib/utils'
+import { GLASS } from '@/components/ui/glass'
 
 /**
  * Invite à installer l'appli sur l'écran d'accueil (reprise de neighborshare).
@@ -76,7 +78,7 @@ export default function PWAInstallBanner() {
 
   return (
     <div className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4">
-      <div className="pointer-events-auto w-full max-w-sm rounded-[20px] border border-glass-edge bg-card p-4 shadow-float">
+      <div className={cn('pointer-events-auto w-full max-w-sm rounded-[28px] p-4', GLASS)}>
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <p className="text-subhead font-semibold">Installer {APP_NAME}</p>
