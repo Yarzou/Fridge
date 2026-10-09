@@ -47,8 +47,13 @@
   --badge: #c2410c;         /* pastille de l'onglet Courses, texte blanc */
   --tile-ink: #1c1c1e;      /* tuile noire (QR des tiroirs) */
   --knob: #ffffff;          /* pastille d'un interrupteur, blanche dans les deux modes */
-  --loupe: #ffffff;         /* loupe (barre d'onglets, contrôle segmenté) : opaque, elle cache ce qu'elle agrandit */
-  --rim: rgba(255, 255, 255, 0.9);  /* liseré de la loupe de verre clair (interrupteur) */
+  --loupe: #ffffff;         /* centre de la loupe (barre d'onglets, contrôle segmenté) : il cache l'original qu'il agrandit */
+  /* Loupe de verre clair (components/ui/GlassLens.tsx, interrupteur) : on voit au travers */
+  --drop: rgba(255, 255, 255, 0.1);         /* teinte du verre */
+  --lens-edge: rgba(255, 255, 255, 0.9);    /* liseré */
+  --lens-glint: rgba(255, 255, 255, 0.95);  /* reflets sur les arêtes haute et basse */
+  --fringe-warm: rgba(255, 64, 160, 0.5);   /* frange colorée du bord (dispersion du verre) */
+  --fringe-cool: rgba(32, 168, 255, 0.5);
 }
 
 html.dark {
@@ -88,7 +93,11 @@ html.dark {
   --tile-ink: #48484a;
   --knob: #ffffff;
   --loupe: #48484a;
-  --rim: rgba(255, 255, 255, 0.4);
+  --drop: rgba(255, 255, 255, 0.05);
+  --lens-edge: rgba(255, 255, 255, 0.35);
+  --lens-glint: rgba(255, 255, 255, 0.4);
+  --fringe-warm: rgba(255, 64, 160, 0.4);
+  --fringe-cool: rgba(32, 168, 255, 0.4);
 }
 
 html,
@@ -143,6 +152,20 @@ textarea::placeholder {
   /* Courses : la liste laisse aussi la place à l'encart « surgelés dans le panier » */
   .pb-tabbar-card {
     padding-bottom: calc(max(calc(env(safe-area-inset-bottom) - 14px), 10px) + 180px);
+  }
+  /* Loupe de verre (components/ui/GlassLens.tsx) : la copie agrandie, nette au
+     centre, s'efface vers le bord. Le bord laisse voir ce qui est sous le verre,
+     flouté et frangé de couleur. */
+  .lens-core {
+    -webkit-mask-image: radial-gradient(closest-side, #000 68%, transparent 96%);
+    mask-image: radial-gradient(closest-side, #000 68%, transparent 96%);
+  }
+  .lens-fringe {
+    -webkit-mask-image: radial-gradient(closest-side, transparent 62%, #000 90%);
+    mask-image: radial-gradient(closest-side, transparent 62%, #000 90%);
+  }
+  .lens-fringe > * {
+    filter: blur(1.5px) drop-shadow(2px 0 0 var(--fringe-warm)) drop-shadow(-2px 0 0 var(--fringe-cool));
   }
   /* Défilement horizontal sans barre visible (« À consommer bientôt ») */
   .no-scrollbar {
