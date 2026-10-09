@@ -391,3 +391,32 @@ Cause : `guessAisle()` retenait l'expression la plus longue trouvée n'importe o
 - Vérifié avec un script jetable (Node, `--experimental-strip-types`) sur 85 noms courants, avant et après. 26 changent de rayon, et tous vont dans le bon. Les 59 autres gardent le leur, y compris deux erreurs déjà présentes : « Steak de thon » (Boucherie) et « Tarte aux pommes » (Fruits et légumes).
 - ⚠️ Avec la migration 002, chaque ajout enregistre le rayon deviné dans `household_aisle_terms`, et ce rayon passe ensuite devant le dictionnaire. Un article déjà ajouté une fois garde donc son mauvais rayon jusqu'à ce qu'on le déplace à la main. La correction est alors retenue. Le dictionnaire corrigé ne vaut que pour les termes nouveaux du foyer.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-09 — Loupe de verre clair qui déborde (barre d'onglets, contrôle segmenté, interrupteurs)
+
+Demandé par l'utilisateur, capture de l'App Store sur iOS 26 à l'appui : quand on glisse sur la barre du bas, le verre dépasse la barre et floute l'onglet suivant. Même chose pour les interrupteurs. Le guide d'Apple (« Adopting Liquid Glass ») le confirme pour les interrupteurs : « the knob transforms into Liquid Glass during interaction », un verre clair qui laisse voir la piste au travers. Jusqu'ici, la loupe était une pastille opaque, à peine plus grande que la bulle (×1,12), qui restait dans la barre.
+
+- `components/ui/GlassLens.tsx` (nouveau) : le rendu de la loupe, partagé par la barre et le contrôle segmenté.
+  - Elle grandit depuis la pastille au repos (`animate-lens`) et la dépasse de `grow` px de chaque côté.
+  - La surface du contrôle est recouverte d'un fond opaque (`bg-loupe`) qui cache les originaux. Au-delà, on voit la page floutée au travers du verre.
+  - Par-dessus, la copie des onglets ou des libellés, agrandie ×1,25 autour du doigt : nette au centre, floutée et frangée de couleur vers le bord. Un premier essai laissait voir l'original, non agrandi, sur le bord : entre deux onglets, une partie du libellé disparaissait (« Cou es »). Seule la copie agrandie est donc visible sous le verre.
+- `components/ui/useLoupe.ts` : ne garde que le mouvement. `LIFT` et `magnifyOrigin()` sont retirés, car la loupe n'est plus agrandie en bloc : elle a ses vraies dimensions. `MAGNIFY` passe à 1,25, le grossissement total d'avant.
+- `components/layout/TabBar.tsx` :
+  - la loupe dépasse la barre de 8 px (`GROW` = 13 autour de la bulle) ;
+  - elle est posée **à côté** de la barre, dans un conteneur commun, et non dedans. Le `backdrop-filter` de la barre limiterait son flou au contenu de la barre, et la page ne se verrait pas au travers de ce qui déborde ;
+  - la bulle reste montée sous la loupe, invisible, et la suit. Au lâcher, elle part de là, comme avant ;
+  - `Bar` mesure aussi la hauteur intérieure et la bordure.
+- `components/ui/Segmented.tsx` : même loupe, qui dépasse le contrôle de 4 px. La hauteur du contrôle est mesurée quand le doigt se pose.
+- `components/ui/Switch.tsx` : doigt posé, la pastille devient une goutte de verre clair de 42 × 39 px, qui dépasse la piste de 4 px en haut, en bas et du côté où elle est. On voit au travers la piste et son bord (flou de 0,5 px, saturation 1,3), avec `shadow-refraction`.
+  - Avant, c'était une pastille de la couleur de la piste, sans débord. Un premier réglage (flou de 2 px, saturation 1,8) donnait une goutte bleu plein sur la piste allumée : ce qui l'entoure se fondait dans le bleu.
+- `app/globals.css`, `tailwind.config.ts` :
+  - ajouts : `--drop` / `bg-drop` (teinte du verre), `--lens-edge`, `--lens-glint`, `--fringe-warm`, `--fringe-cool`, ombre `shadow-refraction` (liseré, reflets sur les arêtes haute et basse, frange magenta à gauche et cyan à droite, ombre portée), animation `lens`, classes `.lens-core` et `.lens-fringe` (masques radiaux ; la frange est faite d'un flou et de deux `drop-shadow` colorés) ;
+  - retraits : `shadow-lifted`, `shadow-rim`, `--rim`.
+  - Les noms évitent `lens`, comme le veut la règle « une ombre ne porte jamais le nom d'une couleur ».
+- Vérifié dans Chrome au format iPhone (390 × 844, ×3), au toucher, en clair et en sombre, sur une page d'essai temporaire (supprimée) et contre une fausse adresse Supabase :
+  - barre : appui sur Congélateur (la loupe dépasse en haut, en bas et à gauche, avec la page floutée au travers) ; glissé à mi-chemin de Courses (l'onglet voisin est agrandi, flou et irisé sur le bord) ; lâcher, qui ouvre Courses ;
+  - contrôle segmenté : appui, glissé entre deux segments, lâcher qui choisit « Tiroirs » ;
+  - interrupteurs : goutte sur la piste allumée et sur la piste éteinte, puis un toucher qui bascule ;
+  - captures supprimées.
+- Non vérifié : le rendu sur un vrai iPhone. Safari gère le flou d'arrière-plan à sa façon, et la fluidité de la loupe reste à juger au doigt.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
