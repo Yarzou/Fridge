@@ -86,48 +86,69 @@ const DICTIONARY: Record<string, string[]> = {
   cremerie: [
     'lait', 'beurre', 'creme', 'creme fraiche', 'yaourt', 'fromage', 'comte', 'emmental', 'gruyere', 'mozzarella',
     'camembert', 'brie', 'chevre', 'roquefort', 'parmesan', 'raclette', 'oeuf', 'fromage blanc', 'skyr',
-    'petit suisse', 'margarine', 'feta', 'ricotta', 'mascarpone',
+    'petit suisse', 'margarine', 'feta', 'ricotta', 'mascarpone', 'riz au lait',
+    'mme loic', 'mme loik', 'madame loic', 'madame loik',
   ],
   'epicerie-salee': [
     'pates', 'spaghetti', 'riz', 'semoule', 'quinoa', 'lentille', 'farine', 'huile', 'vinaigre', 'sel', 'poivre',
     'moutarde', 'mayonnaise', 'ketchup', 'sauce', 'sauce tomate', 'conserve', 'thon', 'sardine', 'mais', 'olive',
     'chips', 'cube', 'bouillon', 'epice', 'cornichon', 'soupe', 'puree', 'couscous', 'nouilles', 'pois chiches',
+    'cacahuete', 'cacahouete', 'beurre de cacahuete', 'beurre de cacahouete', 'beurre d arachide', 'lait de coco',
+    'creme de coco',
   ],
   'epicerie-sucree': [
     'sucre', 'chocolat', 'cafe', 'the', 'tisane', 'confiture', 'miel', 'pate a tartiner', 'cereales', 'biscuit',
-    'gateau', 'compote', 'bonbon', 'levure', 'cacao', 'madeleine', 'sirop', 'chocolat en poudre',
+    'gateau', 'compote', 'bonbon', 'levure', 'cacao', 'madeleine', 'sirop', 'chocolat en poudre', 'creme de marrons',
   ],
-  boissons: ['eau', 'eau gazeuse', 'jus', 'jus d orange', 'soda', 'coca', 'biere', 'vin', 'champagne', 'limonade', 'cidre'],
+  boissons: [
+    'eau', 'eau gazeuse', 'jus', 'jus d orange', 'soda', 'coca', 'biere', 'vin', 'champagne', 'limonade', 'cidre',
+    'the glace', 'cafe glace',
+  ],
   hygiene: [
     'dentifrice', 'brosse a dents', 'shampoing', 'shampooing', 'savon', 'gel douche', 'deodorant', 'papier toilette',
     'coton', 'mouchoir', 'rasoir', 'couche', 'creme solaire',
   ],
   entretien: [
-    'lessive', 'liquide vaisselle', 'eponge', 'sac poubelle', 'sacs poubelle', 'javel', 'nettoyant', 'essuie tout',
-    'sopalin', 'papier aluminium', 'papier cuisson', 'film alimentaire', 'pastilles lave vaisselle', 'adoucissant',
+    'lessive', 'liquide vaisselle', 'eponge', 'sac poubelle', 'sacs poubelle', 'javel', 'eau de javel', 'nettoyant',
+    'essuie tout', 'sopalin', 'papier aluminium', 'papier cuisson', 'film alimentaire', 'pastilles lave vaisselle',
+    'adoucissant',
   ],
-  surgeles: ['surgele', 'glace', 'sorbet', 'frites', 'esquimau', 'batonnet', 'petits pois', 'pizza surgelee'],
+  surgeles: ['glace', 'creme glacee', 'sorbet', 'frites', 'esquimau', 'batonnet', 'petits pois'],
 }
 
-// Expressions les plus longues d'abord : « pomme de terre » passe avant « pomme ».
-const MATCHERS: { re: RegExp; aisle: string; length: number }[] = Object.entries(DICTIONARY)
-  .flatMap(([aisle, words]) =>
-    words.map(word => ({ re: new RegExp(`(^| )${word}(s|x)?( |$)`), aisle, length: word.length })),
-  )
-  .sort((a, b) => b.length - a.length)
+const MATCHERS: { re: RegExp; aisle: string; length: number }[] = Object.entries(DICTIONARY).flatMap(([aisle, words]) =>
+  words.map(word => ({ re: new RegExp(`(^| )${word}(s|x)?( |$)`), aisle, length: word.length })),
+)
+
+// « Haricots verts surgelés », « poulet surgelé » : quel que soit le produit.
+const FROZEN = /(^| )surgelee?s?( |$)/
 
 type HouseholdTerms = Map<string, { aisle_slug: string }>
 
 /**
  * Rayon d'un article : d'abord ce que le foyer a retenu (`householdTerms`,
  * terme normalisé → rayon), puis le dictionnaire, sinon « Divers ».
+ *
+ * En français, le produit se nomme en premier : l'expression trouvée le plus
+ * tôt l'emporte (« jus de pomme » en boissons, « yaourt à la fraise » en
+ * crèmerie), puis la plus longue (« pomme de terre » avant « pomme »,
+ * « beurre de cacahuète » avant « beurre »).
  */
 export function guessAisle(name: string, householdTerms?: HouseholdTerms): string {
   const term = normalizeTerm(name)
   const own = householdTerms?.get(term)?.aisle_slug
   if (own && BY_SLUG.has(own)) return own
-  for (const m of MATCHERS) if (m.re.test(term)) return m.aisle
-  return 'divers'
+  if (FROZEN.test(term)) return 'surgeles'
+  let best: { start: number; length: number; aisle: string } | null = null
+  for (const m of MATCHERS) {
+    const found = m.re.exec(term)
+    if (!found) continue
+    const start = found.index + found[1].length
+    if (!best || start < best.start || (start === best.start && m.length > best.length)) {
+      best = { start, length: m.length, aisle: m.aisle }
+    }
+  }
+  return best?.aisle ?? 'divers'
 }
 
 /**
