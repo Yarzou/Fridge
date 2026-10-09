@@ -370,3 +370,24 @@ Audit demandé : le verre était-il bien là où il doit l'être ? Comparaison d
   Captures supprimées.
 - Non vérifié : le rendu sur un vrai iPhone (flou de Safari).
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-09 — Rayons de la liste de courses mal devinés
+
+Signalé par l'utilisateur : « Beurre de cacahuète » rangé en Crèmerie au lieu d'Épicerie salée, « Mme Loïc » en Divers au lieu de Crèmerie.
+
+Cause : `guessAisle()` retenait l'expression la plus longue trouvée n'importe où dans le nom. « beurre » suffisait donc à ranger le beurre de cacahuète en Crèmerie. À longueur égale, c'était le premier rayon du dictionnaire qui gagnait : « Yaourt à la fraise », « Jus de pomme », « Sorbet citron », « Soupe de légumes » ou « Pain aux raisins » partaient en Fruits et légumes.
+
+- `lib/aisles.ts` :
+  - `guessAisle()` : en français, le produit se nomme en premier. L'expression trouvée le plus tôt l'emporte, puis la plus longue (« pomme de terre » avant « pomme ») ;
+  - « surgelé(e)(s) » range l'article aux Surgelés quel que soit le produit (`FROZEN`), avant le dictionnaire. « Haricots verts surgelés » et « Poisson pané surgelé » allaient en Fruits et légumes et en Poissonnerie. Retirés du dictionnaire, puisque couverts : `surgele`, `pizza surgelee` ;
+  - dictionnaire :
+    - Crèmerie : `mme loic`, `mme loik`, `madame loic`, `madame loik`, `riz au lait` ;
+    - Épicerie salée : `cacahuete`, `cacahouete`, `beurre de cacahuete`, `beurre de cacahouete`, `beurre d arachide`, `lait de coco`, `creme de coco` ;
+    - Épicerie sucrée : `creme de marrons` ;
+    - Boissons : `the glace`, `cafe glace` ;
+    - Entretien : `eau de javel` ;
+    - Surgelés : `creme glacee`.
+    `riz au lait` et `eau de javel` gardent ainsi le rayon qu'ils avaient déjà, malgré la nouvelle règle.
+- Vérifié avec un script jetable (Node, `--experimental-strip-types`) sur 85 noms courants, avant et après. 26 changent de rayon, et tous vont dans le bon. Les 59 autres gardent le leur, y compris deux erreurs déjà présentes : « Steak de thon » (Boucherie) et « Tarte aux pommes » (Fruits et légumes).
+- ⚠️ Avec la migration 002, chaque ajout enregistre le rayon deviné dans `household_aisle_terms`, et ce rayon passe ensuite devant le dictionnaire. Un article déjà ajouté une fois garde donc son mauvais rayon jusqu'à ce qu'on le déplace à la main. La correction est alors retenue. Le dictionnaire corrigé ne vaut que pour les termes nouveaux du foyer.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
