@@ -2,19 +2,25 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, CirclePlus, Ellipsis, LoaderCircle, Plus, ShoppingCart, Snowflake, Trash, Users } from 'lucide-react'
+import { Check, CirclePlus, CircleX, Ellipsis, LoaderCircle, Plus, ShoppingCart, Snowflake, Trash, Users } from 'lucide-react'
 import { AISLES, getAisle, guessAisle, normalizeTerm, parseShoppingInput } from '@/lib/aisles'
+import { byUse } from '@/lib/suggestions'
 import { cn, plural } from '@/lib/utils'
 import type { ShoppingItem } from '@/lib/types'
 import { useHouseholdData } from '@/components/household/HouseholdData'
 import Notice from '@/components/ui/Notice'
 import { buttonClass } from '@/components/ui/Button'
 import { GLASS, glassButton } from '@/components/ui/glass'
+import HistoryPanel, { InlineToast } from './HistoryPanel'
 
 /**
  * Onglet Courses (maquette « Courses ») : une liste partagée par le foyer,
  * rangée par rayon dans l'ordre du magasin. Les surgelés cochés se rangent au
  * congélateur en un geste ; ce qui est fini au congélateur y arrive tout seul.
+ *
+ * Toucher le champ ouvre « Déjà achetés » (HistoryPanel), comme une recherche
+ * d'iOS : le grand titre s'efface, le champ reste en haut, la liste laisse la
+ * place à ce que le foyer a déjà acheté. Le ✓ bleu referme.
  */
 export default function CoursesClient() {
   const data = useHouseholdData()
@@ -23,6 +29,7 @@ export default function CoursesClient() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState<ShoppingItem | null>(null)
   const [storing, setStoring] = useState(false)
+  const [picking, setPicking] = useState(false)
 
   const list = data.shopping
   const toBuy = list.filter(s => !s.checked).length
@@ -37,7 +44,7 @@ export default function CoursesClient() {
   const onList = new Set(list.map(s => normalizeTerm(s.name)))
   const suggestions = [...data.terms.values()]
     .filter(t => t.times_added >= 2 && !onList.has(t.term))
-    .sort((a, b) => b.times_added - a.times_added || (b.last_added_at ?? '').localeCompare(a.last_added_at ?? ''))
+    .sort(byUse)
     .slice(0, 4)
 
   const forFreezer = list.filter(s => s.checked && (s.aisle_slug === 'surgeles' || s.from_item_id))
@@ -50,8 +57,23 @@ export default function CoursesClient() {
     const { name, note } = parseShoppingInput(text)
     if (!name) return
     setText('')
-    await data.addShopping({ name, note, aisle_slug: guessAisle(name, data.terms) })
     inputRef.current?.focus()
+    // Un article déjà acheté garde son nom, accents compris (« beurre de cacahuete » → « Beurre de cacahuète »)
+    const known = data.terms.get(normalizeTerm(name))?.label
+    await data.addShopping({ name: known ?? name, note, aisle_slug: guessAisle(name, data.terms) }, { undoable: true })
+  }
+
+  const startPicking = () => {
+    if (picking) return
+    setPicking(true)
+    // La liste laisse la place au panneau : on le montre depuis le haut
+    requestAnimationFrame(() => window.scrollTo(0, 0))
+  }
+
+  const stopPicking = () => {
+    setPicking(false)
+    setText('')
+    inputRef.current?.blur()
   }
 
   const store = async () => {
@@ -63,8 +85,8 @@ export default function CoursesClient() {
   const members = data.members.length
 
   return (
-    <div className={cn('flex flex-col', forFreezer.length > 0 && 'pb-20')}>
-      <header className="flex flex-col">
+    <div className={cn('flex flex-col', forFreezer.length > 0 && !picking && 'pb-20')}>
+      <header className={cn('flex flex-col', picking && 'hidden')}>
         <div className="relative flex h-11 items-center justify-between">
           <Link href="/foyer" className={glassButton('capsule')}>
             <Users size={18} aria-hidden="true" />
@@ -136,28 +158,71 @@ export default function CoursesClient() {
         )}
       </header>
 
-      <form
-        onSubmit={e => {
-          e.preventDefault()
-          void add()
-        }}
+      {/* Le même champ dans les deux modes : remonté, il perdrait le focus et le clavier se fermerait */}
+      <div
+        className={
+          picking ? 'sticky top-[var(--safe-top,env(safe-area-inset-top))] z-10 -mx-4 bg-canvas px-4 pt-2' : 'mt-4'
+        }
       >
-        <label className="mt-4 flex h-12 items-center gap-2.5 rounded-xl bg-card px-3.5 text-accent">
-          <CirclePlus size={24} aria-hidden="true" />
-          <input
-            ref={inputRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            aria-label="Ajouter un article"
-            placeholder="Ajouter un article"
-            enterKeyHint="done"
-            autoComplete="off"
-            className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none"
-          />
-        </label>
-      </form>
+        <form
+          onSubmit={e => {
+            e.preventDefault()
+            void add()
+          }}
+          className="flex items-center gap-2.5"
+        >
+          <label className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-xl bg-card pl-3.5 pr-1 text-accent">
+            <CirclePlus size={24} className="shrink-0" aria-hidden="true" />
+            <input
+              ref={inputRef}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onFocus={startPicking}
+              onKeyDown={e => {
+                if (e.key === 'Escape') stopPicking()
+              }}
+              aria-label="Ajouter un article"
+              placeholder="Ajouter un article"
+              enterKeyHint="done"
+              autoComplete="off"
+              className="h-11 min-w-0 flex-1 bg-transparent text-body text-ink outline-none"
+            />
+            {text && (
+              <button
+                type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => setText('')}
+                aria-label="Effacer la saisie"
+                className="flex h-11 w-11 shrink-0 items-center justify-center"
+              >
+                <CircleX size={18} className="fill-ink-faint text-card" aria-hidden="true" />
+              </button>
+            )}
+          </label>
+          {picking && (
+            <button
+              type="button"
+              onClick={stopPicking}
+              aria-label="Terminer"
+              className={glassButton('round', 'bg-accent-fill text-white')}
+            >
+              <Check size={22} strokeWidth={2.6} aria-hidden="true" />
+            </button>
+          )}
+        </form>
+        {picking && <InlineToast />}
+      </div>
 
-      {suggestions.length > 0 && (
+      {picking && (
+        <HistoryPanel
+          text={text}
+          onPicked={() => setText('')}
+          onAddTyped={() => void add()}
+          onDrag={() => inputRef.current?.blur()}
+        />
+      )}
+
+      {!picking && suggestions.length > 0 && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <span className="text-footnote text-ink-muted">Souvent achetés</span>
           {suggestions.map(t => (
@@ -174,18 +239,18 @@ export default function CoursesClient() {
         </div>
       )}
 
-      {data.status === 'loading' && (
+      {!picking && data.status === 'loading' && (
         <div className="flex justify-center py-10 text-ink-muted">
           <LoaderCircle size={24} className="animate-spin" aria-label="Chargement" />
         </div>
       )}
-      {data.status === 'error' && (
+      {!picking && data.status === 'error' && (
         <Notice tone="danger" className="mt-6">
           Impossible de charger la liste. Vérifiez votre connexion.
         </Notice>
       )}
 
-      {data.status === 'ready' && list.length === 0 && (
+      {!picking && data.status === 'ready' && list.length === 0 && (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-xl bg-card px-5 py-6 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-soft text-accent">
             <ShoppingCart size={24} aria-hidden="true" />
@@ -198,7 +263,7 @@ export default function CoursesClient() {
         </div>
       )}
 
-      {groups.map(({ aisle, items }) => {
+      {!picking && groups.map(({ aisle, items }) => {
         const Icon = aisle.icon
         const left = items.filter(s => !s.checked).length
         return (
@@ -253,7 +318,7 @@ export default function CoursesClient() {
         )
       })}
 
-      {forFreezer.length > 0 && !data.toast && (
+      {forFreezer.length > 0 && !data.toast && !picking && (
         <div className="bottom-toast fixed inset-x-0 z-30 flex justify-center px-4">
           {/* Verre, comme l'accessoire posé au-dessus d'une barre d'onglets iOS 26 */}
           <div className={cn('flex w-full max-w-md items-center gap-3 rounded-[34px] py-3 pl-3.5 pr-3', GLASS)}>

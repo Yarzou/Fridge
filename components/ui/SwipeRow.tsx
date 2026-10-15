@@ -58,7 +58,13 @@ export default function SwipeRow({ open, onOpenChange, actions, actionsWidth, ch
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 flex" style={{ width: actionsWidth }} onFocus={() => onOpenChange(true)}>
+      {/* Ligne fermée : boutons transparents, sinon leur couleur déborde d'un pixel sous les coins
+          arrondis de la carte (liseré rouge). Ils s'effacent une fois la ligne revenue (200 ms). */}
+      <div
+        className={cn('absolute inset-y-0 right-0 flex', offset === 0 && 'opacity-0 transition-opacity delay-200 duration-0')}
+        style={{ width: actionsWidth }}
+        onFocus={() => onOpenChange(true)}
+      >
         {actions}
       </div>
       <div

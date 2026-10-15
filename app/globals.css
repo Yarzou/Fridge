@@ -119,6 +119,12 @@ textarea::placeholder {
   opacity: 1;
 }
 
+/* Courses, « Déjà achetés » ouvert : le clavier cacherait le toast du bas, il
+   s'affiche sous le champ (HistoryPanel, data-toast-inline). */
+body:has([data-toast-inline]) .undo-toast {
+  display: none;
+}
+
 /* ─── Zones sûres (encoche, barre d'accueil) ───────────────────────────────
  * Le viewport est en `viewport-fit=cover` (app/layout.tsx) : c'est à la page
  * de se décaler. */

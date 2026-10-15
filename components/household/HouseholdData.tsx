@@ -115,11 +115,17 @@ interface HouseholdDataValue {
   /** Ses produits restent dans le congélateur, sans tiroir. « Annuler » les y remet. */
   deleteCompartment: (compartment: Compartment) => Promise<void>
 
-  addShopping: (input: ShoppingInput) => Promise<ShoppingItem | null>
+  /**
+   * Optimiste : l'article s'affiche avant la réponse du réseau. `undoable` : toast
+   * « Ajouté : … · Annuler » (panneau « Déjà achetés »).
+   */
+  addShopping: (input: ShoppingInput, options?: { undoable?: boolean }) => Promise<ShoppingItem | null>
   toggleShopping: (item: ShoppingItem) => Promise<void>
   updateShopping: (item: ShoppingItem, patch: Partial<Pick<ShoppingItem, 'name' | 'note' | 'aisle_slug'>>) => Promise<boolean>
   removeShopping: (ids: string[]) => Promise<void>
   storeFrozen: (ids: string[]) => Promise<void>
+  /** Retire un terme de « Déjà achetés » (une faute retenue), rayon retenu compris. « Annuler » le remet. */
+  forgetTerm: (term: AisleTerm) => Promise<void>
 }
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null)
@@ -632,31 +638,108 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addShopping = async (input: ShoppingInput): Promise<ShoppingItem | null> => {
+  const putTerm = (term: AisleTerm) => setTerms(prev => new Map(prev).set(term.term, term))
+  const dropTerm = (key: string) =>
+    setTerms(prev => {
+      const next = new Map(prev)
+      next.delete(key)
+      return next
+    })
+
+  const forgetTerm = async (term: AisleTerm) => {
+    dropTerm(term.term)
+    const { error } = await supabase
+      .from('household_aisle_terms')
+      .delete()
+      .eq('household_id', householdId)
+      .eq('term', term.term)
+    if (error) {
+      console.error('[courses] oubli du terme', error.code, error.message)
+      putTerm(term)
+      showError()
+      return
+    }
+    showToast({
+      text: `Oublié : ${term.label ?? term.term}`,
+      undo: () => {
+        void restoreTerm(term)
+      },
+    })
+  }
+
+  const restoreTerm = async (term: AisleTerm) => {
+    putTerm(term)
+    const { error } = await supabase.from('household_aisle_terms').upsert({
+      household_id: householdId,
+      term: term.term,
+      aisle_slug: term.aisle_slug,
+      label: term.label,
+      times_added: term.times_added,
+      last_added_at: term.last_added_at,
+      updated_at: new Date().toISOString(),
+    })
+    if (error) {
+      console.error('[courses] terme remis', error.code, error.message)
+      dropTerm(term.term)
+      showError()
+    }
+  }
+
+  const addShopping: HouseholdDataValue['addShopping'] = async (input, options = {}) => {
     const name = input.name.trim().slice(0, 80)
     if (!name) return null
     const existing = shopping.find(s => !s.checked && normalizeTerm(s.name) === normalizeTerm(name))
-    if (existing) return existing
+    if (existing) {
+      if (options.undoable) showToast({ text: `Déjà sur la liste : ${existing.name}` })
+      return existing
+    }
+    // id tiré ici : l'article s'affiche (et se coche dans « Déjà achetés ») avant la réponse du réseau
+    const now = new Date().toISOString()
+    const draft: ShoppingItem = {
+      id: crypto.randomUUID(),
+      household_id: householdId,
+      name,
+      note: input.note ?? null,
+      aisle_slug: input.aisle_slug,
+      checked: false,
+      checked_at: null,
+      from_item_id: input.from_item_id ?? null,
+      added_by: userId,
+      created_at: now,
+      updated_at: now,
+    }
+    setShopping(prev => [...prev, draft])
     const { data, error } = await supabase
       .from('shopping_items')
       .insert({
+        id: draft.id,
         household_id: householdId,
         name,
-        note: input.note ?? null,
-        aisle_slug: input.aisle_slug,
-        from_item_id: input.from_item_id ?? null,
+        note: draft.note,
+        aisle_slug: draft.aisle_slug,
+        from_item_id: draft.from_item_id,
         added_by: userId,
       })
       .select(SHOPPING_COLUMNS)
       .single()
     if (error || !data) {
       console.error('[courses] ajout', error?.code, error?.message)
+      setShopping(prev => prev.filter(s => s.id !== draft.id))
       showError()
       return null
     }
-    setShopping(prev => upsert(prev, data as ShoppingItem))
+    const row = data as ShoppingItem
+    setShopping(prev => upsert(prev, row))
     void noteTerm(name, input.aisle_slug, true)
-    return data as ShoppingItem
+    if (options.undoable) {
+      showToast({
+        text: `Ajouté : ${name}`,
+        undo: () => {
+          void deleteShoppingRows([row])
+        },
+      })
+    }
+    return row
   }
 
   const toggleShopping = async (item: ShoppingItem) => {
@@ -817,6 +900,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     updateShopping,
     removeShopping,
     storeFrozen,
+    forgetTerm,
   }
 
   return <HouseholdDataContext.Provider value={value}>{children}</HouseholdDataContext.Provider>

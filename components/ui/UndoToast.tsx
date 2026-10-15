@@ -21,7 +21,11 @@ export default function UndoToast() {
   }, [toast, dismissToast])
 
   return (
-    <div role="status" aria-live="polite" className="bottom-toast pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4">
+    <div
+      role="status"
+      aria-live="polite"
+      className="undo-toast bottom-toast pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4"
+    >
       {toast && (
         <div
           className={cn(
