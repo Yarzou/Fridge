@@ -21,6 +21,9 @@ export interface HouseholdMember {
   display_name: string
 }
 
+/** Tiroirs par congélateur, au plus : la limite de create_household() (migration 001). */
+export const MAX_COMPARTMENTS = 12
+
 export interface Compartment {
   id: string
   freezer_id: string

@@ -372,7 +372,7 @@ export default function ScannerClient() {
                   <span className="text-title font-semibold">{drawer?.name ?? 'Tiroir inconnu'}</span>
                   <span className="text-subhead text-ink-muted">
                     {drawer
-                      ? `Congélateur ${drawer.freezerName} · ${drawerCount === 0 ? 'vide' : plural(drawerCount, 'produit')}`
+                      ? `${drawer.freezerName} · ${drawerCount === 0 ? 'vide' : plural(drawerCount, 'produit')}`
                       : 'Ce tiroir n’appartient pas à votre foyer.'}
                   </span>
                 </div>

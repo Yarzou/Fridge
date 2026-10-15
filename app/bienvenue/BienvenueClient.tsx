@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Link2, Minus, Plus } from 'lucide-react'
+import { Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PGRST_FUNCTION_NOT_FOUND } from '@/lib/household'
+import { MAX_COMPARTMENTS } from '@/lib/types'
 import { reloadTo } from '@/lib/utils'
 import AuthShell from '@/components/auth/AuthShell'
 import Button from '@/components/ui/Button'
 import Notice from '@/components/ui/Notice'
+import Stepper from '@/components/ui/Stepper'
 import { FieldGroup, FieldRow } from '@/components/ui/FieldGroup'
-
-const MAX_COMPARTMENTS = 12
 
 export default function BienvenueClient({ displayName }: { displayName: string | null }) {
   const [supabase] = useState(() => createClient())
@@ -76,27 +76,14 @@ export default function BienvenueClient({ displayName }: { displayName: string |
           <div className="flex min-h-[52px] items-center gap-3 border-t border-separator px-4">
             <span className="flex-1 text-body">Tiroirs</span>
             <span className="min-w-6 text-right text-body tabular-nums text-ink-muted">{compartments}</span>
-            <div className="flex h-8 items-center overflow-hidden rounded-lg bg-fill-soft">
-              <button
-                type="button"
-                aria-label="Un tiroir de moins"
-                onClick={() => setCompartments(n => Math.max(0, n - 1))}
-                disabled={compartments === 0}
-                className="flex h-8 w-[46px] items-center justify-center disabled:opacity-40"
-              >
-                <Minus size={18} aria-hidden="true" />
-              </button>
-              <span className="h-[18px] w-px bg-separator" aria-hidden="true" />
-              <button
-                type="button"
-                aria-label="Un tiroir de plus"
-                onClick={() => setCompartments(n => Math.min(MAX_COMPARTMENTS, n + 1))}
-                disabled={compartments === MAX_COMPARTMENTS}
-                className="flex h-8 w-[46px] items-center justify-center disabled:opacity-40"
-              >
-                <Plus size={18} aria-hidden="true" />
-              </button>
-            </div>
+            <Stepper
+              value={compartments}
+              min={0}
+              max={MAX_COMPARTMENTS}
+              onChange={setCompartments}
+              decreaseLabel="Un tiroir de moins"
+              increaseLabel="Un tiroir de plus"
+            />
           </div>
         </FieldGroup>
         <p className="mx-4 -mt-2 text-footnote text-ink-muted">

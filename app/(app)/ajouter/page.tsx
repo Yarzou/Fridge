@@ -1,7 +1,5 @@
 import ItemSheet from '@/components/inventory/ItemSheet'
-import { safeInternalPath } from '@/lib/utils'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid, safeInternalPath } from '@/lib/utils'
 
 type Params = Record<string, string | string[] | undefined>
 
@@ -41,8 +39,8 @@ export default async function AjouterPage({ searchParams }: { searchParams: Prom
         format: text(params, 'format', 60),
         image: offImage(text(params, 'image', 300)),
         category: text(params, 'categorie', 30),
-        compartment: tiroir && UUID_RE.test(tiroir) ? tiroir : undefined,
-        freezer: congelateur && UUID_RE.test(congelateur) ? congelateur : undefined,
+        compartment: tiroir && isUuid(tiroir) ? tiroir : undefined,
+        freezer: congelateur && isUuid(congelateur) ? congelateur : undefined,
       }}
     />
   )

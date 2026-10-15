@@ -6,7 +6,17 @@ import { createClient } from '@/lib/supabase/client'
 import { getCategory } from '@/lib/categories'
 import { normalizeTerm } from '@/lib/aisles'
 import { addMonths, toIsoDate } from '@/lib/dates'
-import type { AisleTerm, Freezer, HouseholdMember, HouseholdRole, Item, ShoppingItem } from '@/lib/types'
+import { plural } from '@/lib/utils'
+import {
+  MAX_COMPARTMENTS,
+  type AisleTerm,
+  type Compartment,
+  type Freezer,
+  type HouseholdMember,
+  type HouseholdRole,
+  type Item,
+  type ShoppingItem,
+} from '@/lib/types'
 import { useHousehold } from '@/components/household/HouseholdProvider'
 
 /**
@@ -28,6 +38,7 @@ const ITEM_COLUMNS =
   'id, household_id, freezer_id, compartment_id, category_slug, name, quantity, unit, barcode, image_url, frozen_on, best_before, added_by, created_at, updated_at'
 const SHOPPING_COLUMNS =
   'id, household_id, name, aisle_slug, note, checked, checked_at, from_item_id, added_by, created_at, updated_at'
+const COMPARTMENT_COLUMNS = 'id, freezer_id, name, position'
 
 /** Produits sortis en entier gardés en mémoire : « dernier sorti », code-barres déjà vu. */
 const FINISHED_WINDOW_DAYS = 30
@@ -92,7 +103,17 @@ interface HouseholdDataValue {
   addItem: (input: ItemInput) => Promise<boolean>
   updateItem: (id: string, patch: Partial<ItemInput>) => Promise<boolean>
   deleteItem: (item: Item) => Promise<void>
+
+  /** Nouveau congélateur, avec ses tiroirs « Tiroir 1 », « Tiroir 2 »… Renvoie son id. */
+  addFreezer: (name: string, drawers: number) => Promise<string | null>
+  renameFreezer: (id: string, name: string) => Promise<boolean>
+  /** Supprime un congélateur, ses tiroirs et ses produits. « Annuler » remet tout, avec les mêmes id. */
+  deleteFreezer: (freezer: Freezer) => Promise<boolean>
+  /** Un tiroir de plus, en dernier. Renvoie son id. */
+  addCompartment: (freezerId: string) => Promise<string | null>
   renameCompartment: (id: string, name: string) => Promise<boolean>
+  /** Ses produits restent dans le congélateur, sans tiroir. « Annuler » les y remet. */
+  deleteCompartment: (compartment: Compartment) => Promise<void>
 
   addShopping: (input: ShoppingInput) => Promise<ShoppingItem | null>
   toggleShopping: (item: ShoppingItem) => Promise<void>
@@ -109,6 +130,10 @@ function upsert<T extends { id: string }>(list: T[], row: T): T[] {
   const next = [...list]
   next[index] = row
   return next
+}
+
+function sortCompartments(list: Compartment[]): Compartment[] {
+  return [...list].sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
 }
 
 /** « ×3 » → 3 ; tout le reste → 1 (« 500 g » se range comme un produit). */
@@ -192,10 +217,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
         return
       }
       setFreezers(
-        (freezersRes.data as unknown as Freezer[]).map(f => ({
-          ...f,
-          compartments: [...f.compartments].sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)),
-        })),
+        (freezersRes.data as unknown as Freezer[]).map(f => ({ ...f, compartments: sortCompartments(f.compartments) })),
       )
       setItems(itemsRes.data as Item[])
       setShopping(shoppingRes.data as ShoppingItem[])
@@ -381,19 +403,198 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const renameCompartment = async (id: string, name: string): Promise<boolean> => {
+  const patchFreezer = (id: string, change: (freezer: Freezer) => Freezer) =>
+    setFreezers(prev => prev.map(f => (f.id === id ? change(f) : f)))
+
+  const addFreezer = async (name: string, drawers: number): Promise<string | null> => {
     const trimmed = name.trim().slice(0, 40)
-    if (!trimmed) return false
-    const { error } = await supabase.from('compartments').update({ name: trimmed }).eq('id', id)
+    if (!trimmed) return null
+    const { data, error } = await supabase
+      .from('freezers')
+      .insert({ household_id: householdId, name: trimmed, position: Math.max(0, ...freezers.map(f => f.position)) + 1 })
+      .select('id, name, position')
+      .single()
+    if (error || !data) {
+      console.error('[foyer] congélateur', error?.code, error?.message)
+      showError()
+      return null
+    }
+    const count = Math.min(Math.max(Math.round(drawers), 0), MAX_COMPARTMENTS)
+    let compartments: Compartment[] = []
+    if (count > 0) {
+      const rows = Array.from({ length: count }, (_, i) => ({
+        freezer_id: data.id,
+        household_id: householdId,
+        name: `Tiroir ${i + 1}`,
+        position: i + 1,
+      }))
+      const inserted = await supabase.from('compartments').insert(rows).select(COMPARTMENT_COLUMNS)
+      if (inserted.error) {
+        console.error('[foyer] tiroirs', inserted.error.code, inserted.error.message)
+        // Pas de congélateur à moitié créé
+        await supabase.from('freezers').delete().eq('id', data.id)
+        showError()
+        return null
+      }
+      compartments = sortCompartments(inserted.data as Compartment[])
+    }
+    setFreezers(prev => [...prev, { ...(data as Omit<Freezer, 'compartments'>), compartments }])
+    return data.id as string
+  }
+
+  const renameFreezer = async (id: string, name: string): Promise<boolean> => {
+    const trimmed = name.trim().slice(0, 40)
+    const before = freezers.find(f => f.id === id)
+    if (!trimmed || !before) return false
+    if (trimmed === before.name) return true
+    patchFreezer(id, f => ({ ...f, name: trimmed }))
+    const { error } = await supabase.from('freezers').update({ name: trimmed }).eq('id', id)
     if (error) {
-      console.error('[foyer] tiroir', error.code, error.message)
+      console.error('[foyer] congélateur', error.code, error.message)
+      patchFreezer(id, f => ({ ...f, name: before.name }))
       showError()
       return false
     }
-    setFreezers(prev =>
-      prev.map(f => ({ ...f, compartments: f.compartments.map(c => (c.id === id ? { ...c, name: trimmed } : c)) })),
-    )
     return true
+  }
+
+  /** Remet un congélateur supprimé avec ses id : les QR collés sur ses tiroirs remarchent. */
+  const restoreFreezer = async (freezer: Freezer, rows: Item[]) => {
+    const { compartments, ...row } = freezer
+    const { error } = await supabase.from('freezers').insert({ ...row, household_id: householdId })
+    const drawers =
+      !error && compartments.length > 0
+        ? await supabase.from('compartments').insert(compartments.map(c => ({ ...c, household_id: householdId })))
+        : null
+    const products = !error && !drawers?.error && rows.length > 0 ? await supabase.from('items').insert(rows) : null
+    const failure = error ?? drawers?.error ?? products?.error
+    if (failure) {
+      console.error('[foyer] restauration du congélateur', failure.code, failure.message)
+      showError()
+      load()
+      return
+    }
+    setFreezers(prev => [...prev.filter(f => f.id !== freezer.id), freezer].sort((a, b) => a.position - b.position))
+    setItems(prev => rows.reduce((list, item) => upsert(list, item), prev))
+  }
+
+  const deleteFreezer = async (freezer: Freezer): Promise<boolean> => {
+    if (freezers.length <= 1) return false
+    // Produits finis compris : la base les supprime avec le congélateur
+    const rows = items.filter(i => i.freezer_id === freezer.id)
+    setFreezers(prev => prev.filter(f => f.id !== freezer.id))
+    setItems(prev => prev.filter(i => i.freezer_id !== freezer.id))
+    const { error } = await supabase.from('freezers').delete().eq('id', freezer.id)
+    if (error) {
+      console.error('[foyer] suppression du congélateur', error.code, error.message)
+      setFreezers(prev => [...prev, freezer].sort((a, b) => a.position - b.position))
+      setItems(prev => [...prev, ...rows])
+      showError()
+      return false
+    }
+    showToast({
+      text: `Supprimé : ${freezer.name}`,
+      undo: () => {
+        void restoreFreezer(freezer, rows)
+      },
+    })
+    return true
+  }
+
+  const addCompartment = async (freezerId: string): Promise<string | null> => {
+    const freezer = freezers.find(f => f.id === freezerId)
+    if (!freezer || freezer.compartments.length >= MAX_COMPARTMENTS) return null
+    // « Tiroir 4 » après trois tiroirs, ou le numéro libre suivant
+    const taken = new Set(freezer.compartments.map(c => c.name.toLocaleLowerCase('fr-FR')))
+    let n = freezer.compartments.length + 1
+    while (taken.has(`tiroir ${n}`)) n++
+    // id tiré ici : le tiroir s'affiche avant la réponse du réseau
+    const drawer: Compartment = {
+      id: crypto.randomUUID(),
+      freezer_id: freezerId,
+      name: `Tiroir ${n}`,
+      position: Math.max(0, ...freezer.compartments.map(c => c.position)) + 1,
+    }
+    patchFreezer(freezerId, f => ({ ...f, compartments: [...f.compartments, drawer] }))
+    const { error } = await supabase.from('compartments').insert({ ...drawer, household_id: householdId })
+    if (error) {
+      console.error('[foyer] ajout du tiroir', error.code, error.message)
+      patchFreezer(freezerId, f => ({ ...f, compartments: f.compartments.filter(c => c.id !== drawer.id) }))
+      showError()
+      return null
+    }
+    return drawer.id
+  }
+
+  const renameCompartment = async (id: string, name: string): Promise<boolean> => {
+    const trimmed = name.trim().slice(0, 40)
+    const before = freezers.flatMap(f => f.compartments).find(c => c.id === id)
+    if (!trimmed || !before) return false
+    if (trimmed === before.name) return true
+    const rename = (to: string) =>
+      patchFreezer(before.freezer_id, f => ({
+        ...f,
+        compartments: f.compartments.map(c => (c.id === id ? { ...c, name: to } : c)),
+      }))
+    rename(trimmed)
+    const { error } = await supabase.from('compartments').update({ name: trimmed }).eq('id', id)
+    if (error) {
+      console.error('[foyer] tiroir', error.code, error.message)
+      rename(before.name)
+      showError()
+      return false
+    }
+    return true
+  }
+
+  /** Remet un tiroir supprimé avec son id (son QR remarche) et y replace ses produits. */
+  const restoreCompartment = async (drawer: Compartment, moved: string[]) => {
+    const { error } = await supabase.from('compartments').insert({ ...drawer, household_id: householdId })
+    // Seulement les produits restés sans tiroir : pas ceux rangés ailleurs entre-temps
+    const products =
+      !error && moved.length > 0
+        ? await supabase.from('items').update({ compartment_id: drawer.id }).in('id', moved).is('compartment_id', null)
+        : null
+    const failure = error ?? products?.error
+    if (failure) {
+      console.error('[foyer] restauration du tiroir', failure.code, failure.message)
+      showError()
+      load()
+      return
+    }
+    patchFreezer(drawer.freezer_id, f => ({
+      ...f,
+      compartments: sortCompartments([...f.compartments.filter(c => c.id !== drawer.id), drawer]),
+    }))
+    const ids = new Set(moved)
+    setItems(prev => prev.map(i => (ids.has(i.id) && !i.compartment_id ? { ...i, compartment_id: drawer.id } : i)))
+  }
+
+  const deleteCompartment = async (drawer: Compartment) => {
+    const inside = items.filter(i => i.compartment_id === drawer.id)
+    const inStock = inside.filter(i => i.quantity > 0).length
+    const moved = inside.map(i => i.id)
+    const place = (compartmentId: string | null) => {
+      const ids = new Set(moved)
+      setItems(prev => prev.map(i => (ids.has(i.id) ? { ...i, compartment_id: compartmentId } : i)))
+    }
+    patchFreezer(drawer.freezer_id, f => ({ ...f, compartments: f.compartments.filter(c => c.id !== drawer.id) }))
+    // La base fait de même (on delete set null)
+    place(null)
+    const { error } = await supabase.from('compartments').delete().eq('id', drawer.id)
+    if (error) {
+      console.error('[foyer] suppression du tiroir', error.code, error.message)
+      patchFreezer(drawer.freezer_id, f => ({ ...f, compartments: sortCompartments([...f.compartments, drawer]) }))
+      place(drawer.id)
+      showError()
+      return
+    }
+    showToast({
+      text: inStock > 0 ? `Supprimé : ${drawer.name} · ${plural(inStock, 'produit')} sans tiroir` : `Supprimé : ${drawer.name}`,
+      undo: () => {
+        void restoreCompartment(drawer, moved)
+      },
+    })
   }
 
   /**
@@ -605,7 +806,12 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     addItem,
     updateItem,
     deleteItem,
+    addFreezer,
+    renameFreezer,
+    deleteFreezer,
+    addCompartment,
     renameCompartment,
+    deleteCompartment,
     addShopping,
     toggleShopping,
     updateShopping,

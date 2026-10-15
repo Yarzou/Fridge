@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ChevronRight, CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
+import { CirclePlus, Copy, QrCode, Share, Snowflake, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME } from '@/lib/app'
 import { cn, formatDate, initial, plural, reloadTo } from '@/lib/utils'
@@ -38,7 +37,6 @@ const THEME_ORDER: ThemeChoice[] = ['system', 'light', 'dark']
  * étiquettes QR des tiroirs, rappels, connexion, apparence, compte.
  */
 export default function FoyerClient() {
-  const router = useRouter()
   const { household, userId } = useHousehold()
   const data = useHouseholdData()
   const [supabase] = useState(() => createClient())
@@ -195,6 +193,7 @@ export default function FoyerClient() {
           return (
             <ListRow
               key={f.id}
+              href={`/foyer/congelateur/${f.id}`}
               leading={
                 <IconTile className={index === 0 ? 'bg-tile-ice' : 'bg-tile-slate'}>
                   <Snowflake size={18} aria-hidden="true" />
@@ -202,14 +201,17 @@ export default function FoyerClient() {
               }
               title={f.name}
               subtitle={`${drawers} · ${count === 0 ? 'vide' : plural(count, 'produit')}`}
-              trailing={<ChevronRight size={18} strokeWidth={2.4} className="shrink-0 text-ink-faint" aria-hidden="true" />}
-              onClick={() => {
-                data.selectFreezer(f.id)
-                router.push('/congelateur')
-              }}
             />
           )
         })}
+        {data.status === 'ready' && (
+          <ListRow
+            href="/foyer/congelateur/nouveau"
+            leading={<span className="flex w-[30px] justify-center text-accent"><CirclePlus size={24} aria-hidden="true" /></span>}
+            title="Ajouter un congélateur"
+            tone="accent"
+          />
+        )}
         {drawerCount > 0 && (
           <ListRow
             href="/etiquettes"

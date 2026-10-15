@@ -187,7 +187,7 @@ export default function CongelateurClient() {
                   </button>
                 ))}
                 <Link
-                  href="/etiquettes"
+                  href="/etiquettes?retour=/congelateur"
                   role="menuitem"
                   className="flex min-h-11 items-center gap-3 px-4 text-body text-accent"
                 >

@@ -30,6 +30,13 @@ export function safeInternalPath(value: string | null | undefined, fallback = '/
   return value
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Un id de la base (uuid), pour filtrer ce qui arrive par l'URL. */
+export function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
 /** « 3 tiroirs », « 1 tiroir » — accord simple en nombre. */
 export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count} ${count > 1 ? pluralForm : singular}`
