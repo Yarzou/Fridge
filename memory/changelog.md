@@ -420,3 +420,32 @@ Demandé par l'utilisateur, capture de l'App Store sur iOS 26 à l'appui : quand
   - captures supprimées.
 - Non vérifié : le rendu sur un vrai iPhone. Safari gère le flou d'arrière-plan à sa façon, et la fluidité de la loupe reste à juger au doigt.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-15 — Réglages des congélateurs, bulle de la barre d'onglets
+
+Demandé par l'utilisateur : depuis Foyer, toucher un congélateur ouvrait l'onglet Congélateur, mais la bulle restait sur Foyer. À la place, il veut régler le congélateur : nombre de tiroirs, et un nouveau congélateur dans une autre pièce (garage), dont les QR suivent.
+
+- `components/layout/TabBar.tsx` : l'onglet touché (`pending`) est oublié dès que l'URL change. Avant, il restait valable tant que l'URL était celle du toucher : Congélateur → Foyer par la barre, puis retour sur `/congelateur` par un lien de la page (ou le bouton retour d'Android), et la bulle reprenait Foyer. Reproduit avec l'ancien code, corrigé avec le nouveau (retour arrière dans Chrome).
+- `components/household/HouseholdData.tsx` : nouvelles actions, optimistes et avec « Annuler » comme les autres :
+  - `addFreezer(nom, tiroirs)` : congélateur en dernière position, tiroirs « Tiroir 1 »… ; si les tiroirs échouent, le congélateur est supprimé ;
+  - `renameFreezer`, et `renameCompartment` devient optimiste ;
+  - `addCompartment` : « Tiroir N » en dernier (numéro libre suivant), id tiré par `crypto.randomUUID()` pour l'afficher avant la réponse ;
+  - `deleteCompartment` : ses produits restent dans le congélateur, sans tiroir (comme le fait la base, `on delete set null`). « Annuler » remet le tiroir **avec le même id** (son QR remarche) et y replace les produits restés sans tiroir ;
+  - `deleteFreezer` : refusé s'il ne reste qu'un congélateur. « Annuler » remet congélateur, tiroirs et produits avec leurs id.
+  - Aucune migration : le RLS de 001 permet déjà à tout membre de créer, renommer et supprimer congélateurs et tiroirs.
+- `app/(app)/(onglets)/foyer/congelateur/[id]/` (nouveau) : réglages d'un congélateur, dans l'onglet Foyer (la barre reste sur Foyer) :
+  - nom (la pièce), enregistré à la sortie du champ ;
+  - « Nombre de tiroirs » avec − / + (− supprime le dernier), puis chaque tiroir avec son nom modifiable sur place, son nombre de produits, et le − rouge d'iOS pour le supprimer ;
+  - « Imprimer tous les QR », et « Imprimer le QR du nouveau tiroir » pour ceux ajoutés pendant la visite ;
+  - « Supprimer ce congélateur » : grisé s'il reste des produits (« Videz-le d'abord ») ou si c'est le seul.
+  - `?nouveau=1` : encart « Congélateur créé » et bouton « Imprimer les QR ».
+- `app/(app)/(onglets)/foyer/congelateur/nouveau/` (nouveau) : nom, pièces proposées en pastilles (Cuisine, Garage, Cellier, Buanderie, Sous-sol, Cave), nombre de tiroirs. Ouvre ensuite les réglages du congélateur créé.
+- `app/(app)/(onglets)/foyer/FoyerClient.tsx` : un congélateur ouvre ses réglages (et non plus l'onglet Congélateur) ; ligne « Ajouter un congélateur ».
+- `app/(app)/etiquettes/` : `?congelateur={id}` (un congélateur), `?tiroirs={id},{id}` (quelques tiroirs), `?retour` (bouton retour, `/foyer` par défaut). Ce qui est imprimé est rappelé au-dessus du bouton. Avec plusieurs congélateurs, chaque étiquette porte déjà le nom du sien.
+- `components/ui/Stepper.tsx` (nouveau) : le − / + de Bienvenue, repris par les deux nouvelles pages (zone de toucher de 44 px). `MAX_COMPARTMENTS` (12) passe dans `lib/types.ts`.
+- `lib/utils.ts` : `isUuid()`, utilisé par `/ajouter` et `/etiquettes`.
+- `app/(app)/scanner/ScannerClient.tsx` : un QR de tiroir affiche « Garage · 3 produits », et non plus « Congélateur Garage » (qui donnait « Congélateur Congélateur » avec le nom par défaut).
+- `CongelateurClient.tsx` : le lien des étiquettes ramène au Congélateur (`?retour=/congelateur`).
+- Vérifié dans Chrome au format iPhone (390 × 844), au toucher, contre un faux Supabase local : renommer, ajouter un tiroir, supprimer un tiroir plein puis « Annuler », créer « Garage » à 2 tiroirs, imprimer ses étiquettes, le supprimer puis « Annuler ». La base du faux Supabase est revenue à l'état attendu (mêmes id). Clair et sombre. Captures et scripts supprimés.
+- Non vérifié : sur la vraie base et sur un téléphone. Les congélateurs et les tiroirs ne sont pas publiés en Realtime : un autre membre voit les changements au retour au premier plan.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
