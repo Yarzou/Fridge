@@ -115,8 +115,16 @@ export default function TabBar() {
   const contentRefs = useRef<(HTMLSpanElement | null)[]>([])
   const gesture = useRef<{ startX: number; dragging: boolean } | null>(null)
   const swallowClick = useRef(false)
-  // Onglet visé au toucher, valable tant que l'URL n'a pas changé
-  const [pending, setPending] = useState<{ index: number; from: string } | null>(null)
+  // Onglet visé au toucher, oublié dès que l'URL change. Le garder tant que
+  // l'URL restait celle du toucher ne suffisait pas : revenu sur cette URL par
+  // un lien de la page (Foyer → un congélateur), la bulle reprenait l'onglet
+  // touché alors.
+  const [pending, setPending] = useState<number | null>(null)
+  const [seenPath, setSeenPath] = useState(pathname)
+  if (seenPath !== pathname) {
+    setSeenPath(pathname)
+    setPending(null)
+  }
   const { lens, grab, follow, drop } = useLoupe()
   // La goutte ne se déforme qu'après un premier geste, pas à l'ouverture de l'appli
   const [touched, setTouched] = useState(false)
@@ -157,7 +165,7 @@ export default function TabBar() {
   const activeIndex = TABS.findIndex(
     ({ href, also }) => pathname.startsWith(href) || (also ?? []).some(p => pathname.startsWith(p)),
   )
-  const index = pending && pending.from === pathname ? pending.index : activeIndex
+  const index = pending ?? activeIndex
   const lifted = lens !== null && bar !== null
   // Doigt posé : l'onglet sous la loupe prend la couleur de l'onglet choisi
   const highlighted = lifted ? tabAt(lens.center, bar) : index
@@ -173,7 +181,7 @@ export default function TabBar() {
   /** La bulle part tout de suite vers l'onglet, sans attendre la page. */
   const mark = (next: number) => {
     setTouched(true)
-    setPending({ index: next, from: pathname })
+    setPending(next)
   }
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
