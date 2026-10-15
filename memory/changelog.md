@@ -489,3 +489,29 @@ Retour d'un utilisateur : pouvoir resélectionner « Beurre de cacahuète » plu
   Captures et scripts supprimés.
 - Non vérifié : sur un vrai téléphone. Il reste notamment à voir si le clavier reste ouvert au toucher d'une ligne sur iOS, et comment le champ collé en haut se comporte quand Safari fait défiler la page à l'ouverture du clavier. Non vérifié non plus sur la vraie base.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-15 — « Déjà achetés » : ✓ « en double » sur iPhone
+
+Signalé par l'utilisateur : à l'ouverture du champ, le ✓ au bout de « Ajouter un article » semble doublé, ou posé sur le « … ».
+
+- Le « … » (verre, `backdrop-filter`) est 10 px au-dessus de l'endroit où arrive le ✓ (8 à 52 px, contre 18 à 62 px). L'en-tête n'était que masqué (`hidden`), et Safari iOS peut garder affiché le calque de flou d'un élément masqué. Les deux ronds se chevauchaient alors. Cause probable, non reproduite (pas de Safari iOS sur ce poste).
+- `app/(app)/(onglets)/courses/CoursesClient.tsx` :
+  - l'en-tête est retiré pendant la saisie (`{!picking && …}`), et non plus masqué. Sa place dans l'arbre reste (`false`) : le champ n'est pas remonté et garde le focus ;
+  - le ✓ « Terminer » prend la recette du bouton Scanner (`bg-accent-fill shadow-sheen`) : bleu opaque, sans flou ni liseré de verre, qui pouvaient aussi se lire comme un second contour.
+- Vérifié dans Chrome au format iPhone (×3) : « … » absent du DOM pendant la saisie, focus gardé, frappe acceptée, ✓ seul en haut à droite. Captures et scripts supprimés. Reste à confirmer sur l'iPhone.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-15 — « Déjà achetés » : ✓ pour ajouter, ‹ pour revenir à la liste
+
+Retour de l'utilisateur : le ✓ « Terminer » trompait. On croyait ajouter l'article, et l'on quittait le panneau.
+
+- `app/(app)/(onglets)/courses/CoursesClient.tsx` :
+  - le ✓ bleu au bout du champ **ajoute la saisie**, comme Entrée : bouton d'envoi du formulaire, grisé tant que le champ est vide. Le clavier reste ouvert (`preventDefault` sur `mousedown`) ;
+  - un **‹** en verre, à gauche du champ, ramène à la liste (« Retour à la liste »), comme les autres retours de l'appli. Échap aussi ;
+  - le champ garde 183 px à 375 px de large (iPhone mini) et 198 px à 390 px. Le texte indicatif (130 px) tient en entier.
+- Vérifié dans Chrome au format iPhone (375 et 390 px) :
+  - ✓ grisé champ vide, actif avec une saisie ;
+  - « Moutarde » + ✓ : ajouté, focus gardé, champ vidé, toast sous le champ ;
+  - ‹ : retour à la liste, Moutarde dessus, clavier rangé.
+  Captures et scripts supprimés.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
