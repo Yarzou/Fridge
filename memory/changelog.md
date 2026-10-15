@@ -449,3 +449,43 @@ Demandé par l'utilisateur : depuis Foyer, toucher un congélateur ouvrait l'ong
 - Vérifié dans Chrome au format iPhone (390 × 844), au toucher, contre un faux Supabase local : renommer, ajouter un tiroir, supprimer un tiroir plein puis « Annuler », créer « Garage » à 2 tiroirs, imprimer ses étiquettes, le supprimer puis « Annuler ». La base du faux Supabase est revenue à l'état attendu (mêmes id). Clair et sombre. Captures et scripts supprimés.
 - Non vérifié : sur la vraie base et sur un téléphone. Les congélateurs et les tiroirs ne sont pas publiés en Realtime : un autre membre voit les changements au retour au premier plan.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-15 — « Déjà achetés » : reprendre un article en un toucher
+
+Retour d'un utilisateur : pouvoir resélectionner « Beurre de cacahuète » plutôt que le retaper. Proposition sur maquettes (5 écrans), validée par l'utilisateur, puis développée.
+
+- `lib/suggestions.ts` (nouveau) : recherche dans le vocabulaire du foyer (`household_aisle_terms`), sans réseau, en fonctions pures.
+  - `searchTerms()` : la saisie est cherchée au début de n'importe quel mot (« cac » trouve « Beurre de cacahuète »), sans accents ni majuscules (`normalizeTerm` lettre par lettre). Dès 5 lettres, une faute de frappe est tolérée (distance d'édition ≤ 1 : « cacahete »). Les correspondances exactes passent devant, puis les plus achetés. Chaque résultat est découpé pour mettre en gras ce qui correspond.
+  - `byUse()` : le tri « plus ajoutés, puis plus récents, puis alphabétique », repris par les pastilles « Souvent achetés ».
+  - Seuls les termes qui ont un libellé (migration 002) sont proposés. Sans 002, ou pour un terme enregistré avant elle, rien ne s'affiche : le libellé sans accents (« beurre de cacahuete ») resterait ensuite tel quel sur la liste.
+- `app/(app)/(onglets)/courses/HistoryPanel.tsx` (nouveau) : le panneau « Déjà achetés ».
+  - Champ vide : les 6 plus achetés, puis tout le reste rayon par rayon, dans l'ordre du magasin.
+  - Saisie : jusqu'à 8 résultats, puis « Ajouter « … » » (la saisie telle quelle), sauf si elle correspond déjà à un article connu.
+  - Chaque ligne : tuile du rayon, + ou ✓. Ce qui est encore à acheter porte ✓ et « Sur la liste · ×8 » ; retoucher le ✓ le retire. Un article coché (déjà dans le panier) se propose à nouveau avec +.
+  - « 2 cac » met ×2 sur l'article choisi (`parseShoppingInput`).
+  - Toucher une ligne garde le focus (`preventDefault` sur `mousedown`) : le clavier reste ouvert et le champ se vide, on enchaîne. Un glissé vertical de plus de 10 px range le clavier, comme sur iOS.
+  - Glisser une ligne vers la gauche : « Oublier » (une faute retenue, comme une recherche récente de Safari), avec « Annuler ».
+  - `InlineToast` : le toast « Annuler » s'affiche sous le champ, car le clavier cacherait celui du bas. Sa place reste réservée pour que les lignes ne bougent pas sous le doigt.
+- `app/(app)/(onglets)/courses/CoursesClient.tsx` :
+  - toucher le champ ouvre le panneau, comme une recherche d'iOS. Le grand titre et la liste s'effacent, le champ reste collé en haut (`sticky`, sous `--safe-top`) avec le ✓ bleu « Terminer » (ou Échap) ;
+  - le formulaire reste au même endroit de l'arbre dans les deux modes. Remonté, le champ perdrait le focus et le clavier se fermerait. L'en-tête est donc masqué (`hidden`), et non retiré ;
+  - la touche Entrée reprend le nom connu, accents compris : « 2 pates » ajoute « Pâtes » ×2. Elle affiche « Ajouté : … · Annuler » ;
+  - bouton d'effacement (ⓧ) dans le champ ; l'encart « Ranger » est masqué pendant la saisie ;
+  - les pastilles « Souvent achetés » au repos ne changent pas.
+- `components/household/HouseholdData.tsx` :
+  - `addShopping` devient optimiste : id tiré par `crypto.randomUUID()`, l'article s'affiche avant la réponse et disparaît si l'insertion échoue. Il garde sa signature ; la nouvelle option `{ undoable: true }` affiche « Ajouté : … · Annuler », ou « Déjà sur la liste : … » ;
+  - `forgetTerm(term)` (nouveau) : supprime la ligne de `household_aisle_terms`, rayon retenu compris. « Annuler » la remet telle quelle (`upsert` : libellé, compteur, date). La policy `household_aisle_terms_all` de 001 le permet déjà : **aucune migration**.
+- `components/ui/UndoToast.tsx`, `app/globals.css` : classe `undo-toast`, masquée tant qu'un `[data-toast-inline]` est affiché (`body:has(...)`, Safari 15.4 et plus).
+- `components/ui/SwipeRow.tsx` : ligne fermée, les boutons cachés dessous sont transparents. Leur couleur débordait d'un pixel sous les coins arrondis des cartes (liseré rouge visible sur les captures). Ils s'effacent 200 ms après le retour de la ligne. Le Congélateur en profite aussi.
+- Vérifié dans Chrome au format iPhone (390 × 844), au toucher, contre un faux Supabase local avec un historique de 15 articles, dont une faute (« Beure de cacahuete ») et un terme sans libellé. 35 contrôles passent :
+  - ouverture, ordre des rayons, ✓ et « Sur la liste · ×8 », terme sans libellé masqué ;
+  - « cac » (ordre, gras), « cacahete » ;
+  - un toucher ajoute en gardant le focus, toast sous le champ et toast du bas masqué, « Annuler » ;
+  - « 2 pates » + Entrée ;
+  - glisser, « Oublier », « Annuler » ;
+  - défilement qui range le clavier, « Terminer » ;
+  - sombre ;
+  - Congélateur : glisser une ligne, boutons masqués quand elle est fermée.
+  Captures et scripts supprimés.
+- Non vérifié : sur un vrai téléphone. Il reste notamment à voir si le clavier reste ouvert au toucher d'une ligne sur iOS, et comment le champ collé en haut se comporte quand Safari fait défiler la page à l'ouverture du clavier. Non vérifié non plus sur la vraie base.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
