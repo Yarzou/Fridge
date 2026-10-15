@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, CirclePlus, CircleX, Ellipsis, LoaderCircle, Plus, ShoppingCart, Snowflake, Trash, Users } from 'lucide-react'
+import { Check, ChevronLeft, CirclePlus, CircleX, Ellipsis, LoaderCircle, Plus, ShoppingCart, Snowflake, Trash, Users } from 'lucide-react'
 import { AISLES, getAisle, guessAisle, normalizeTerm, parseShoppingInput } from '@/lib/aisles'
 import { byUse } from '@/lib/suggestions'
 import { cn, plural } from '@/lib/utils'
@@ -20,7 +20,9 @@ import HistoryPanel, { InlineToast } from './HistoryPanel'
  *
  * Toucher le champ ouvre « Déjà achetés » (HistoryPanel), comme une recherche
  * d'iOS : le grand titre s'efface, le champ reste en haut, la liste laisse la
- * place à ce que le foyer a déjà acheté. Le ✓ bleu referme.
+ * place à ce que le foyer a déjà acheté. Le ✓ bleu ajoute la saisie (comme
+ * Entrée), le ‹ ramène à la liste : un ✓ « Terminer » laissait croire qu'il
+ * ajoutait l'article.
  */
 export default function CoursesClient() {
   const data = useHouseholdData()
@@ -86,77 +88,81 @@ export default function CoursesClient() {
 
   return (
     <div className={cn('flex flex-col', forFreezer.length > 0 && !picking && 'pb-20')}>
-      <header className={cn('flex flex-col', picking && 'hidden')}>
-        <div className="relative flex h-11 items-center justify-between">
-          <Link href="/foyer" className={glassButton('capsule')}>
-            <Users size={18} aria-hidden="true" />
-            {members > 1 ? `Partagée · ${members}` : 'Partager'}
-          </Link>
-          <button
-            type="button"
-            onClick={() => setMenuOpen(o => !o)}
-            aria-label="Options de la liste"
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            className={glassButton('round', 'text-accent')}
-          >
-            <Ellipsis size={22} aria-hidden="true" />
-          </button>
-          {menuOpen && (
-            <>
-              <button
-                type="button"
-                aria-label="Fermer le menu"
-                className="fixed inset-0 z-20 cursor-default"
-                onClick={() => setMenuOpen(false)}
-              />
-              {/* Menu en verre, qui sort du bouton */}
-              <div
-                role="menu"
-                className={cn(
-                  'absolute right-0 top-12 z-30 w-72 origin-top-right overflow-hidden rounded-[22px] motion-safe:animate-menu',
-                  GLASS,
-                )}
-              >
+      {/* Retiré, pas seulement masqué : sur iPhone, le « … » en verre pouvait rester affiché sous le ✓.
+          Sa place dans l'arbre demeure (false) : le champ qui suit n'est pas remonté. */}
+      {!picking && (
+        <header className="flex flex-col">
+          <div className="relative flex h-11 items-center justify-between">
+            <Link href="/foyer" className={glassButton('capsule')}>
+              <Users size={18} aria-hidden="true" />
+              {members > 1 ? `Partagée · ${members}` : 'Partager'}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label="Options de la liste"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              className={glassButton('round', 'text-accent')}
+            >
+              <Ellipsis size={22} aria-hidden="true" />
+            </button>
+            {menuOpen && (
+              <>
                 <button
                   type="button"
-                  role="menuitem"
-                  disabled={inCart === 0}
-                  onClick={() => {
-                    setMenuOpen(false)
-                    void data.removeShopping(list.filter(s => s.checked).map(s => s.id))
-                  }}
-                  className="flex min-h-11 w-full items-center gap-3 border-b border-separator px-4 text-left text-body text-danger disabled:opacity-40"
+                  aria-label="Fermer le menu"
+                  className="fixed inset-0 z-20 cursor-default"
+                  onClick={() => setMenuOpen(false)}
+                />
+                {/* Menu en verre, qui sort du bouton */}
+                <div
+                  role="menu"
+                  className={cn(
+                    'absolute right-0 top-12 z-30 w-72 origin-top-right overflow-hidden rounded-[22px] motion-safe:animate-menu',
+                    GLASS,
+                  )}
                 >
-                  <Trash size={18} aria-hidden="true" />
-                  Retirer les articles cochés{inCart > 0 ? ` (${inCart})` : ''}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={inCart === 0}
-                  onClick={() => {
-                    setMenuOpen(false)
-                    list.filter(s => s.checked).forEach(s => void data.toggleShopping(s))
-                  }}
-                  className="flex min-h-11 w-full items-center gap-3 px-4 text-left text-body disabled:opacity-40"
-                >
-                  <CirclePlus size={18} className="text-accent" aria-hidden="true" />
-                  Tout remettre à acheter
-                </button>
-              </div>
-            </>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={inCart === 0}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      void data.removeShopping(list.filter(s => s.checked).map(s => s.id))
+                    }}
+                    className="flex min-h-11 w-full items-center gap-3 border-b border-separator px-4 text-left text-body text-danger disabled:opacity-40"
+                  >
+                    <Trash size={18} aria-hidden="true" />
+                    Retirer les articles cochés{inCart > 0 ? ` (${inCart})` : ''}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={inCart === 0}
+                    onClick={() => {
+                      setMenuOpen(false)
+                      list.filter(s => s.checked).forEach(s => void data.toggleShopping(s))
+                    }}
+                    className="flex min-h-11 w-full items-center gap-3 px-4 text-left text-body disabled:opacity-40"
+                  >
+                    <CirclePlus size={18} className="text-accent" aria-hidden="true" />
+                    Tout remettre à acheter
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          <h1 className="mt-1.5 text-large-title">Courses</h1>
+          {data.status === 'ready' && (
+            <p className="mt-0.5 text-subhead text-ink-muted">
+              {list.length === 0
+                ? 'Partagée avec le foyer'
+                : `${plural(toBuy, 'article')} à acheter · ${inCart} dans le panier`}
+            </p>
           )}
-        </div>
-        <h1 className="mt-1.5 text-large-title">Courses</h1>
-        {data.status === 'ready' && (
-          <p className="mt-0.5 text-subhead text-ink-muted">
-            {list.length === 0
-              ? 'Partagée avec le foyer'
-              : `${plural(toBuy, 'article')} à acheter · ${inCart} dans le panier`}
-          </p>
-        )}
-      </header>
+        </header>
+      )}
 
       {/* Le même champ dans les deux modes : remonté, il perdrait le focus et le clavier se fermerait */}
       <div
@@ -171,6 +177,16 @@ export default function CoursesClient() {
           }}
           className="flex items-center gap-2.5"
         >
+          {picking && (
+            <button
+              type="button"
+              onClick={stopPicking}
+              aria-label="Retour à la liste"
+              className={glassButton('round', 'text-accent')}
+            >
+              <ChevronLeft size={24} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          )}
           <label className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-xl bg-card pl-3.5 pr-1 text-accent">
             <CirclePlus size={24} className="shrink-0" aria-hidden="true" />
             <input
@@ -201,10 +217,12 @@ export default function CoursesClient() {
           </label>
           {picking && (
             <button
-              type="button"
-              onClick={stopPicking}
-              aria-label="Terminer"
-              className={glassButton('round', 'bg-accent-fill text-white')}
+              type="submit"
+              disabled={!text.trim()}
+              onMouseDown={e => e.preventDefault()}
+              aria-label="Ajouter à la liste"
+              // Comme le bouton Scanner : bleu opaque, sans le flou ni le liseré du verre
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-fill text-white shadow-sheen disabled:opacity-40"
             >
               <Check size={22} strokeWidth={2.6} aria-hidden="true" />
             </button>
