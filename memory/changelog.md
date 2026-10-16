@@ -515,3 +515,13 @@ Retour de l'utilisateur : le ✓ « Terminer » trompait. On croyait ajouter l'a
   - ‹ : retour à la liste, Moutarde dessus, clavier rangé.
   Captures et scripts supprimés.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-16 — Congélateur : « Tiroirs » en premier, avec les logos des catégories
+
+Demandes de l'utilisateur : inverser les deux premiers segments de « Ranger par », ouvrir la page sur le premier, et montrer la catégorie de chaque produit dans la vue « Tiroirs », comme dans la page d'un tiroir.
+
+- `app/(app)/(onglets)/congelateur/CongelateurClient.tsx` :
+  - ordre des segments `VIEWS` = Tiroirs, Catégories, Dates ;
+  - la page s'ouvre sur « Tiroirs » (premier segment), et non plus sur « Catégories » ;
+  - en vue « Tiroirs », chaque ligne commence par la tuile de sa catégorie (`CategoryTile` `md`, comme la vue « Dates »). Le libellé de la catégorie reste dans la ligne du dessous : la catégorie ne repose pas sur la seule teinte de la tuile. La vue « Catégories » n'a pas de tuile par ligne : elle est déjà dans le titre de chaque groupe.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
