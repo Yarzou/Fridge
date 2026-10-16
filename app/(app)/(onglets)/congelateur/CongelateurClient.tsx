@@ -34,8 +34,8 @@ import PushPrompt from '@/components/push/PushPrompt'
 type View = 'categories' | 'tiroirs' | 'dates'
 
 const VIEWS: { value: View; label: string }[] = [
-  { value: 'categories', label: 'Catégories' },
   { value: 'tiroirs', label: 'Tiroirs' },
+  { value: 'categories', label: 'Catégories' },
   { value: 'dates', label: 'Dates' },
 ]
 
@@ -49,14 +49,14 @@ interface Group {
 
 /**
  * Onglet Congélateur (maquette « Congélateur ») : ce qu'il y a dedans, rangé
- * par catégorie, par tiroir ou par date, ce qu'il faut manger d'abord en tête.
+ * par tiroir, par catégorie ou par date, ce qu'il faut manger d'abord en tête.
  * Une ligne glissée vers la gauche propose « Sortir 1 » et « Tout sortir ».
  */
 export default function CongelateurClient() {
   const data = useHouseholdData()
   const today = useToday()
   const [query, setQuery] = useState('')
-  const [view, setView] = useState<View>('categories')
+  const [view, setView] = useState<View>('tiroirs')
   const [openRow, setOpenRow] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -357,7 +357,7 @@ export default function CongelateurClient() {
                       openRow === item.id && 'select-none',
                     )}
                   >
-                    {view === 'dates' && <CategoryTile slug={item.category_slug} size="md" />}
+                    {view !== 'categories' && <CategoryTile slug={item.category_slug} size="md" />}
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="truncate text-body">{item.name}</span>
                       <span className="truncate text-footnote text-ink-muted">{meta(item)}</span>
