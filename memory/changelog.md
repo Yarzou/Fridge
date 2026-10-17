@@ -525,3 +525,16 @@ Demandes de l'utilisateur : inverser les deux premiers segments de « Ranger par
   - la page s'ouvre sur « Tiroirs » (premier segment), et non plus sur « Catégories » ;
   - en vue « Tiroirs », chaque ligne commence par la tuile de sa catégorie (`CategoryTile` `md`, comme la vue « Dates »). Le libellé de la catégorie reste dans la ligne du dessous : la catégorie ne repose pas sur la seule teinte de la tuile. La vue « Catégories » n'a pas de tuile par ligne : elle est déjà dans le titre de chaque groupe.
 - `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+
+## 2026-10-17 — Courses : rayon « Frais »
+
+Demande de l'utilisateur : savoir où ranger une pizza achetée fraîche, et non surgelée. L'utilisateur ne voyait pas non plus « Tiroirs en premier » (2026-10-16) : le code est bon, mais les deux commits du 2026-10-16 n'étaient pas encore poussés, donc pas déployés.
+
+- `liquibase/changelog/005-rayon-frais.sql` (+ master) : rayon `frais` (« Frais ») juste après Crèmerie, les suivants descendent d'un rang. Le `--rollback` remet articles et termes retenus dans Divers. Jouée, annulée puis rejouée sur PGlite (sans Liquibase) ; contrôle `grep` des mots-clés : rien.
+- `lib/aisles.ts` :
+  - rayon « Frais » dans `AISLES` (icône `Refrigerator`, tuile `bg-tile-gold`), avec `fallback: 'divers'` (nouveau champ de `Aisle`) ;
+  - dictionnaire `frais` : pizza, quiche, plats cuisinés, lasagnes, pâtes fraîches, raviolis, gnocchis, pâte feuilletée / brisée / sablée / à pizza, taboulé, houmous, carottes râpées, sushis, sandwichs, nems… « Pizza surgelée » reste aux surgelés (`FROZEN`). Vérifié : « Pâtes » reste en épicerie salée, « Salade » et « Carottes » en fruits et légumes.
+  - Effet sur « Fini au congélateur » : une pizza sans code-barres (congelée à la maison) est proposée au rayon Frais, et non plus aux Surgelés (règle existante d'`aisleForFreezerItem`). Avec code-barres, toujours Surgelés.
+- `components/household/HouseholdData.tsx` : `withKnownAisle()`, pendant de `withKnownCategory()`. Si la base refuse le rayon (`23503` sur `aisle_slug`, migration 005 pas passée), `addShopping` et `updateShopping` réessaient dans le rayon de repli, affichent l'article là où il a été écrit et retiennent ce rayon pour le terme.
+- `npm run lint` : aucune remarque. `npm run typecheck` : OK. `npm run build` : OK.
+- À faire par l'utilisateur : `npm run db:migrate` (002 à 005 en attente).
