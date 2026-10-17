@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { PostgrestError, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { getCategory } from '@/lib/categories'
-import { normalizeTerm } from '@/lib/aisles'
+import { getAisle, normalizeTerm } from '@/lib/aisles'
 import { addMonths, toIsoDate } from '@/lib/dates'
 import { plural } from '@/lib/utils'
 import {
@@ -160,6 +160,22 @@ async function withKnownCategory<R extends { category_slug?: string }, T>(
   const fallback = row.category_slug ? getCategory(row.category_slug).fallback : undefined
   const unknown = result.error?.code === '23503' && result.error.message.includes('category_slug')
   return fallback && unknown ? write({ ...row, category_slug: fallback }) : result
+}
+
+/**
+ * Même chose pour le rayon d'un article de courses. Renvoie aussi la ligne
+ * écrite, pour afficher l'article là où la base l'a vraiment rangé.
+ */
+async function withKnownAisle<R extends { aisle_slug?: string }, T>(
+  row: R,
+  write: (row: R) => PromiseLike<{ data: T | null; error: PostgrestError | null }>,
+) {
+  const result = await write(row)
+  const fallback = row.aisle_slug ? getAisle(row.aisle_slug).fallback : undefined
+  const unknown = result.error?.code === '23503' && result.error.message.includes('aisle_slug')
+  if (!fallback || !unknown) return { ...result, row }
+  const retry = { ...row, aisle_slug: fallback }
+  return { ...(await write(retry)), row: retry }
 }
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
@@ -709,9 +725,8 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       updated_at: now,
     }
     setShopping(prev => [...prev, draft])
-    const { data, error } = await supabase
-      .from('shopping_items')
-      .insert({
+    const { data, error } = await withKnownAisle(
+      {
         id: draft.id,
         household_id: householdId,
         name,
@@ -719,9 +734,9 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
         aisle_slug: draft.aisle_slug,
         from_item_id: draft.from_item_id,
         added_by: userId,
-      })
-      .select(SHOPPING_COLUMNS)
-      .single()
+      },
+      insert => supabase.from('shopping_items').insert(insert).select(SHOPPING_COLUMNS).single(),
+    )
     if (error || !data) {
       console.error('[courses] ajout', error?.code, error?.message)
       setShopping(prev => prev.filter(s => s.id !== draft.id))
@@ -730,7 +745,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     }
     const row = data as ShoppingItem
     setShopping(prev => upsert(prev, row))
-    void noteTerm(name, input.aisle_slug, true)
+    void noteTerm(name, row.aisle_slug, true)
     if (options.undoable) {
       showToast({
         text: `Ajouté : ${name}`,
@@ -756,15 +771,18 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
 
   const updateShopping: HouseholdDataValue['updateShopping'] = async (item, patch) => {
     setShopping(prev => prev.map(s => (s.id === item.id ? { ...s, ...patch } : s)))
-    const { error } = await supabase.from('shopping_items').update(patch).eq('id', item.id)
+    const { error, row: written } = await withKnownAisle(patch, update =>
+      supabase.from('shopping_items').update(update).eq('id', item.id),
+    )
     if (error) {
       console.error('[courses] modification', error.code, error.message)
       setShopping(prev => prev.map(s => (s.id === item.id ? item : s)))
       showError()
       return false
     }
-    if (patch.aisle_slug && patch.aisle_slug !== item.aisle_slug) {
-      void noteTerm(patch.name ?? item.name, patch.aisle_slug, false)
+    if (written !== patch) setShopping(prev => prev.map(s => (s.id === item.id ? { ...s, ...written } : s)))
+    if (written.aisle_slug && written.aisle_slug !== item.aisle_slug) {
+      void noteTerm(written.name ?? item.name, written.aisle_slug, false)
     }
     return true
   }

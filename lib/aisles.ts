@@ -6,6 +6,7 @@ import {
   Drumstick,
   Fish,
   Milk,
+  Refrigerator,
   ShoppingBasket,
   Snowflake,
   Sparkles,
@@ -16,14 +17,19 @@ import {
 
 /**
  * Rayons de la liste de courses. Slugs, libellés et ordre recopient la table
- * `aisles` (migration 001) : l'ordre d'un parcours en magasin, surgelés en
- * dernier pour la chaîne du froid. Icône et couleur ne vivent qu'ici.
+ * `aisles` (migrations 001 et 005) : l'ordre d'un parcours en magasin,
+ * surgelés en dernier pour la chaîne du froid. Icône et couleur ne vivent qu'ici.
  */
 export interface Aisle {
   slug: string
   label: string
   icon: LucideIcon
   tile: string
+  /**
+   * Rayon ajouté par une migration : celui où vont ses articles tant que la
+   * base ne le connaît pas encore (HouseholdData réessaie avec celui-ci).
+   */
+  fallback?: string
 }
 
 export const AISLES: Aisle[] = [
@@ -32,6 +38,7 @@ export const AISLES: Aisle[] = [
   { slug: 'boucherie', label: 'Boucherie', icon: Drumstick, tile: 'bg-tile-red' },
   { slug: 'poissonnerie', label: 'Poissonnerie', icon: Fish, tile: 'bg-tile-blue' },
   { slug: 'cremerie', label: 'Crèmerie', icon: Milk, tile: 'bg-tile-dairy' },
+  { slug: 'frais', label: 'Frais', icon: Refrigerator, tile: 'bg-tile-gold', fallback: 'divers' },
   { slug: 'epicerie-salee', label: 'Épicerie salée', icon: Wheat, tile: 'bg-tile-amber' },
   { slug: 'epicerie-sucree', label: 'Épicerie sucrée', icon: Cookie, tile: 'bg-tile-pink' },
   { slug: 'boissons', label: 'Boissons', icon: CupSoda, tile: 'bg-tile-orange' },
@@ -88,6 +95,15 @@ const DICTIONARY: Record<string, string[]> = {
     'camembert', 'brie', 'chevre', 'roquefort', 'parmesan', 'raclette', 'oeuf', 'fromage blanc', 'skyr',
     'petit suisse', 'margarine', 'feta', 'ricotta', 'mascarpone', 'riz au lait',
     'mme loic', 'mme loik', 'madame loic', 'madame loik',
+  ],
+  // Traiteur et libre-service frais : ce qui s'achète au froid sans être
+  // surgelé (« pizza surgelée » reste aux surgelés, voir FROZEN).
+  frais: [
+    'pizza', 'quiche', 'traiteur', 'plat cuisine', 'plats cuisines', 'plat prepare', 'plats prepares', 'lasagne',
+    'hachis parmentier', 'gratin dauphinois', 'pates fraiches', 'ravioli', 'tortellini', 'gnocchi', 'quenelle',
+    'pate feuilletee', 'pate brisee', 'pate sablee', 'pate a pizza', 'taboule', 'houmous', 'hoummous', 'tarama',
+    'guacamole', 'salade composee', 'carottes rapees', 'celeri remoulade', 'gaspacho', 'sushi', 'sandwich', 'wrap',
+    'nem', 'samoussa', 'croque monsieur', 'tofu',
   ],
   'epicerie-salee': [
     'pates', 'spaghetti', 'riz', 'semoule', 'quinoa', 'lentille', 'farine', 'huile', 'vinaigre', 'sel', 'poivre',

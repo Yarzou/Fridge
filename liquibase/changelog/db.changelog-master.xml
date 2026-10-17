@@ -20,4 +20,7 @@
   <!-- Catégorie « Pommes de terre » (frites, potatoes, rösti…), juste après Légumes -->
   <include file="liquibase/changelog/004-categorie-pommes-de-terre.sql"/>
 
+  <!-- Rayon « Frais » des courses (pizzas et plats du traiteur, pâtes fraîches…), juste après Crèmerie -->
+  <include file="liquibase/changelog/005-rayon-frais.sql"/>
+
 </databaseChangeLog>
